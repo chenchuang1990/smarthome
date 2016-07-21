@@ -1,0 +1,8 @@
+{
+	"listenport":"8989",
+	"serveraddr":"192.168.1.115",
+	"serverport":"8990",
+	"serialport":"/dev/ttyUSB0",
+	"timeout":"60"
+}
+

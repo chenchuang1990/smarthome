@@ -1,0 +1,138 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
+#include <signal.h>
+#include <string.h>
+#include <fcntl.h>
+#include <pthread.h>
+#include <linux/input.h>
+#include "mtZdo.h"
+#include "commands.h"
+#include "mtSapi.h"
+#include "key.h"
+
+#define NOKEY 0
+#define PERMIT_JOINING_DURATION	60
+
+int led_cnt = -1;
+int led_fd;
+
+void set_led_onoff(int led, int on)
+{
+	ioctl(led_fd, on, led);
+}
+
+
+void start_led_timer(struct itimerval *itv, int duration)
+{	
+	//setitimer (ITIMER_VIRTUAL, itv, NULL);
+	setitimer (ITIMER_PROF, itv, NULL);
+	set_led_onoff(LED_set, LED_ON);
+	//led_cnt = duration - 3;
+	led_cnt = duration;
+}
+
+static void excute_led_timer(void)
+{
+	if(led_cnt > 0) {
+		led_cnt--;
+	}
+	else if(0 == led_cnt) {
+		led_cnt = -1;
+		set_led_onoff(LED_set, LED_OFF);			
+	}
+}
+
+void led_indicator(int signum)
+{
+	excute_led_timer();
+}
+
+void *key_event_process(void *args)
+{
+	int keys_fd;	
+	struct input_event t;
+	char *dev;
+	PermitJoiningReqFormat_t request;
+	struct sigaction sa;
+	struct itimerval timer;
+
+	printf("key_event_process\n");
+    setvbuf(stdout, (char *)NULL, _IONBF, 0);//disable stdio out buffer;
+	dev = getenv("KEYPAD_DEV");
+    
+    keys_fd = open(dev, O_RDONLY);
+	if(keys_fd<=0)
+	{
+        printf("open %s device error!\n",dev);
+		return 0;
+	}
+
+	/* Install timer_handler as the signal handler for SIGVTALRM. */
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = &led_indicator;
+	//sigaction(SIGVTALRM, &sa, NULL);
+	sigaction(SIGPROF, &sa, NULL);
+
+	/* Configure the timer to expire after 1 sec... */
+	timer.it_value.tv_sec = 1;
+	timer.it_value.tv_usec = 0;
+	/* ... and every 1 sec after that. */
+	timer.it_interval.tv_sec = 1;
+	timer.it_interval.tv_usec = 0;
+	/* Start a virtual timer. It counts down whenever this process is
+	  executing. */
+	//setitimer (ITIMER_VIRTUAL, &timer, NULL);
+
+	request.Destination = 0x0000;
+	request.Timeout = 0; 
+	sendcmd((unsigned char *)&request, ZB_PERMIT_JOINING_REQ);
+
+	while(1)
+	{	
+        if(read(keys_fd,&t,sizeof(t))==sizeof(t)) {
+		    if((t.type==EV_KEY) && (t.value==0 || t.value==1))
+			{
+				switch(t.code)
+				{
+			    	
+			    	case 257:
+			    		printf("key257 %s\n",(t.value)?"Released":"Pressed");
+			    	break;
+			    	
+			    	case 258:
+			    		printf("key258 %s\n",(t.value)?"Released":"Pressed");
+						if(1 == t.value) {
+							request.Timeout = PERMIT_JOINING_DURATION; //allowed joining whthin 60s
+							sendcmd((unsigned char *)&request, ZB_PERMIT_JOINING_REQ);
+							start_led_timer(&timer, PERMIT_JOINING_DURATION);
+						}
+							
+			    	break;
+			    	
+			    	case 259:
+			    		printf("key259 %s\n",(t.value)?"Released":"Pressed");
+			    	break;
+			    	
+			    	case 260:
+			    		printf("key260 %s\n",(t.value)?"Released":"Pressed");
+			    	break;
+
+					case 261:
+						printf("key261 %s\n",(t.value)?"Released":"Pressed");
+					break;
+			    	
+			    	default:
+			    		break;
+			    }
+			}
+		}
+	}	
+	close(keys_fd);
+	
+    return 0;
+}
+
