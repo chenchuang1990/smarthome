@@ -596,7 +596,7 @@ static void send_read_attr_cmd(struct device *d)
 	readcmd.attrID[7] = ATTRID_BASIC_POWER_SOURCE;
 
 	//zcl_SendRead(message->DstEndpoint, message->SrcEndpoint, message->SrcAddr, ZCL_CLUSTER_ID_GEN_BASIC, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC,0,0);
-	printf("mtZdoEndDeviceAnnceIndCb:send read attribute cmd\n");
+	printf("send_read_attr_cmd:send read attribute cmd\n");
 	//zcl_SendRead(1, 1, d->shortaddr, ZCL_CLUSTER_ID_GEN_BASIC, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC, 0, get_sequence());
 	zcl_SendRead(1, 1, d->shortaddr, ZCL_CLUSTER_ID_GEN_BASIC, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC, 0, 0);
 }
@@ -660,7 +660,8 @@ static uint8_t mtZdoSimpleDescRspCb(SimpleDescRspFormat_t *msg)
 
 			sqlitedb_update_device_endpoint(d);
 			device_set_status(d, DEVICE_GET_SIMPLEDESC);
-			//report_new_device(d);
+			report_new_device(d);
+			device_set_status(d, DEVICE_ACTIVE);
 			send_read_attr_cmd(d);
 		}
 	}
@@ -1109,12 +1110,21 @@ static uint8_t mtZdoEndDeviceAnnceIndCb(EndDeviceAnnceIndFormat_t *msg)
 	}
 #endif
 	/*added on 0629*/
+	#if 0
 	if(d && !device_check_status(d, DEVICE_ACTIVE)) {
 		report_new_device(d);
 		device_set_status(d, DEVICE_ACTIVE);
 	}
+	#endif
+	printf("check DEVICE_ACTIVE\n");
+	if(d && device_check_status(d, DEVICE_ACTIVE)) {
+		printf("report_new_device\n");
+		report_new_device(d);
+		//device_set_status(d, DEVICE_ACTIVE);
+	}
 	
-	if(d && (((d->status & DEVICE_SEND_ACTIVEEP) == 0) || list_empty(&d->eplisthead))) {
+	//if(d && (((d->status & DEVICE_SEND_ACTIVEEP) == 0) || list_empty(&d->eplisthead))) {
+	if(d && ((d->status & DEVICE_SEND_ACTIVEEP) == 0)) {
 		consolePrint("mtZdoEndDeviceAnnceIndCb: request active_ep_req\n");
 		//	d->status |= DEVICE_SEND_ACTIVEEP;
 		device_set_status(d, DEVICE_SEND_ACTIVEEP);
@@ -1245,7 +1255,7 @@ static uint8_t mtZdoLeaveIndCb(LeaveIndFormat_t *msg)
 	struct endpoint * ep;
 	struct device * d = gateway_getdevice(getgateway(), msg->ExtAddr);
 	if(d){
-		d->status &= ~DEVICE_ACTIVE;
+		//d->status &= ~DEVICE_ACTIVE;
 		d->status &= ~DEVICE_SEND_ATTR;
 		d->status |= DEVICE_LEAVE_NET;
 		sqlitedb_update_device_status(d);

@@ -55,7 +55,6 @@ int g_main_to_znp_write_fd = -1;
 int main() 
 {
 	//ceconf_load();
-	ptirnf("test git\n");
 	printf("test version :%04x\n", APP_TIME);
 	//system("ntpdate s2m.time.edu.cn");
 	
