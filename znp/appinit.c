@@ -1118,7 +1118,7 @@ static uint8_t mtZdoEndDeviceAnnceIndCb(EndDeviceAnnceIndFormat_t *msg)
 	#endif
 	printf("check DEVICE_ACTIVE\n");
 	if(d && device_check_status(d, DEVICE_ACTIVE)) {
-		printf("report_new_device\n");
+		printf("report new device\n");
 		report_new_device(d);
 		//device_set_status(d, DEVICE_ACTIVE);
 	}
