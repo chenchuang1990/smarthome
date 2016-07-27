@@ -24,8 +24,8 @@ static struct ceconf{
 
 }s_conf = {
 	"8989",
-	"222.222.218.50",
-	"8787",
+	"das.gateway.axtchild.com",
+	"8887",
 	"/dev/ttyO1",
 	180,
 };

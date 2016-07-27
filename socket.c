@@ -118,7 +118,6 @@ struct connection * connectserver(){
 	return serverconn;
 }
 
-
 struct connection * createpipe(int * wfd){
 	int fdsig[2];
 	if(pipe2(fdsig,O_CLOEXEC) == -1){
