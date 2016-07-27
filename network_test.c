@@ -13,6 +13,7 @@
 #include <netdb.h>
 #include <errno.h>
 #include <pthread.h>
+#include <string.h>
 #include "key.h"
 #include "gateway.h"
 #include "zcl.h"
@@ -22,7 +23,7 @@
 #include "ceconf.h"
 
 
-//#define MAX_WAIT_TIME   1
+#define _USE_DNS
 #define MAX_NO_PACKETS  1
 #define ICMP_HEADSIZE 8 
 #define PACKET_SIZE     4096
@@ -58,17 +59,16 @@ int NetIsOk()
 {     
          
    // double rtt;
-    //struct hostent *host;
+    struct hostent *host;
     //struct protoent *protocol;
-    int i;
+    int i, iFlag;
 	//int recv_status;
-	int iFlag;
- 
+	
+ 	bzero(&dest_addr, sizeof(dest_addr));
+    dest_addr.sin_family = AF_INET; 
 #ifdef _USE_DNS 
     char hostname[32];
-    sprintf(hostname,"%s","www.baidu.com")
-    bzero(&dest_addr, sizeof(dest_addr));
-    dest_addr.sin_family = AF_INET; 
+    sprintf(hostname,"%s","www.baidu.com");
  
     if((host=gethostbyname(hostname))==NULL) 
     {

@@ -124,6 +124,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 							if(-1 == settimeofday(&feed_tv, NULL)) {
 								perror("settimeofday");
 							}
+							system("sync");
 						}
 					}					
 					break;

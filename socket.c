@@ -17,6 +17,7 @@
 #include "ceconf.h"
 #include "toolkit.h"
 
+#define _USE_DNS 
 
 int
 make_socket_non_blocking (int sfd) {
@@ -79,20 +80,37 @@ create_and_bind (char *port) {
 	return sfd;
 }
 
-int openclient(char *addr, char *port) {
+int openclient(char *addr, char *port) 
+{
 	typedef struct sockaddr SA;
 	int sockfd;
 	struct sockaddr_in servaddr;
 
-	if ((sockfd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
+	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		fprintf(stdout,"fail to connection to server\n");
 		return -1;
 	}
-
+	
 	bzero(&servaddr, sizeof(servaddr));
-	servaddr.sin_family = PF_INET;
-	servaddr.sin_port = htons(atoi(port));
+	servaddr.sin_family = AF_INET;
+
+#ifdef _USE_DNS 
+	char hostname[64];
+	struct hostent *host;
+
+	sprintf(hostname, "%s", addr);
+ 
+	if((host=gethostbyname(hostname))==NULL) 
+	{
+		printf("[NetStatus]  error : Can't get serverhost info!\n");
+		return 0;
+	}
+ 
+	bcopy((char*)host->h_addr,(char*)&servaddr.sin_addr,host->h_length);
+#else
 	servaddr.sin_addr.s_addr = inet_addr(addr);
+#endif
+	servaddr.sin_port = htons(atoi(port));
 
 	if (connect(sockfd, (SA *)&servaddr, sizeof(servaddr)) < 0) {
 	//	fprintf(stdout, "fail to connect\n");
