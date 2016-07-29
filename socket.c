@@ -102,8 +102,8 @@ int openclient(char *addr, char *port)
  
 	if((host=gethostbyname(hostname))==NULL) 
 	{
-		printf("[NetStatus]  error : Can't get serverhost info!\n");
-		return 0;
+		printf("[openclient]  error : Can't get serverhost info!\n");
+		return -1;
 	}
  
 	bcopy((char*)host->h_addr,(char*)&servaddr.sin_addr,host->h_length);
@@ -113,7 +113,7 @@ int openclient(char *addr, char *port)
 	servaddr.sin_port = htons(atoi(port));
 
 	if (connect(sockfd, (SA *)&servaddr, sizeof(servaddr)) < 0) {
-	//	fprintf(stdout, "fail to connect\n");
+		fprintf(stdout, "fail to connect\n");
 		close(sockfd);
 
 		return -1;
@@ -178,6 +178,7 @@ int sendnonblocking(int fd, void * buf, int buflen){
 			else if(errno == EAGAIN) break;
 			else {
 				fprintf(stdout, "errno %d error msg %s\n", errno,strerror(errno));
+				printf("fd is %d\n", fd);
 				assert(0);
 				break;
 			}
