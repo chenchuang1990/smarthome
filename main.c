@@ -48,6 +48,7 @@
 #include "key.h"
 #include "network_test.h"
 
+#define CATCH_SEGFAULT
 
 #define APP_TIME 0x0624
 
@@ -57,7 +58,9 @@ int main()
 	//ceconf_load();
 	printf("test version :%04x\n", APP_TIME);
 	//system("ntpdate s2m.time.edu.cn");
-	
+	#ifdef CATCH_SEGFAULT
+	catchsegfault();
+	#endif
 	sqlitedb_table_build(DBPATH);
 
 	unsigned long long mac = toolkit_getmac();

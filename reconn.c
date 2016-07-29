@@ -26,7 +26,7 @@ void event_reconnect(struct eventhub * hub, int wfd){
 		struct connection * serverconn = connectserver();
 		
 		if(serverconn){
-		        eventhub_register(hub,connection_getfd(serverconn)); 
+		    eventhub_register(hub,connection_getfd(serverconn)); 
 			int n = write(wfd, CESEND, 1);
 			if(n <= 0){
 				fprintf(stdout, "%d %s \n ", errno, strerror(errno));
