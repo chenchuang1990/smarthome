@@ -59,7 +59,7 @@ int main()
 	printf("test version :%04x\n", APP_TIME);
 	//system("ntpdate s2m.time.edu.cn");
 	#ifdef CATCH_SEGFAULT
-	catchsegfault();
+	sigaction_init();
 	#endif
 	sqlitedb_table_build(DBPATH);
 
