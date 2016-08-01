@@ -89,7 +89,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 				printf("[event_recvmsg]login_time:%lx\n", login_time);
 			}
 		}
-	}else if(c && (connection_gettype(c) == CONNSOCKETCLIENT || connection_gettype(c) == CONNSOCKETSERVER)){ 
+	} else if(c && (connection_gettype(c) == CONNSOCKETCLIENT || connection_gettype(c) == CONNSOCKETSERVER)){ 
 		c->timestamp = time(NULL);
 		connection_put(c, buf, buflen); 
 
@@ -266,6 +266,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 					 break;
 				case DEVICE_SETARM:
 				     {
+					 	printf("DEVICE_SETARM\n");
 					     struct protocol_cmdtype_arm arm;
 					     unsigned int serialnum = 0;
 					     unsigned char endpoint = 0;
@@ -274,11 +275,17 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 					     //result = (result == 0)?1:0;
 					     if(result == 0){ 
 						     struct endpoint * ep = gateway_get_endpoint(ieee, endpoint);
-						     memcpy(&ep->simpledesc.arm, &arm, sizeof(struct protocol_cmdtype_arm));
+							 if(ep) {
+						     	memcpy(&ep->simpledesc.arm, &arm, sizeof(struct protocol_cmdtype_arm));
+							 }
+							 else {
+							 	result = 1;
+							 }	
 					     }
+						 else 
+						 	result = 1;
 					     unsigned char sbuf[128] = {0};
 					     unsigned int sbuflen = protocol_encode_arm_feedback(sbuf, serialnum, ieee, result);
-
 					     sendnonblocking(fd, sbuf, sbuflen);						 
 						 toolkit_printbytes(sbuf, sbuflen);
 				     }

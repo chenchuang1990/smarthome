@@ -342,42 +342,44 @@ int sqlitedb_update_device_endpoint_zonetype(struct device * d, unsigned char en
 
 int sqlitedb_update_device_arm(unsigned long long ieee, unsigned char endpoint, struct protocol_cmdtype_arm * arm){
 	struct device * d = gateway_getdevice(getgateway(), ieee);
-	int epindex = device_get_index(d, endpoint);
-	if(epindex == -1){
-		return 1;
-	}
-	struct sqlitedb * db = sqlitedb_create(DBPATH);
-	if(!db){
-		return 2;
-	}
-	sqlite3_blob * blob = NULL;
-	int ret = sqlite3_blob_open(db->db, 
-			"main",
-			"device",
-			"endpoint",
-			d->ieeeaddr,
-			1,
-			&blob);
-	if(ret != SQLITE_OK){
-		sqlitedb_destroy(db);
-		return 3;
-	}
-	int cursor = 0;
-	cursor+=sizeof(ActiveEpRspFormat_t) + sizeof(struct simpledesc)*epindex + sizeof(SimpleDescRspFormat_t) + sizeof(unsigned short);
-	ret = sqlite3_blob_write(blob, arm, sizeof(struct protocol_cmdtype_arm),cursor);
-	if( ret != SQLITE_OK){
-		const char* result = sqlite3_errmsg(db->db);
-		fprintf(stdout, "------------------ %s \n", result);
+	if(d) {
+		int epindex = device_get_index(d, endpoint);
+		if(epindex == -1){
+			return 1;
+		}
+		struct sqlitedb * db = sqlitedb_create(DBPATH);
+		if(!db){
+			return 2;
+		}
+		sqlite3_blob * blob = NULL;
+		int ret = sqlite3_blob_open(db->db, 
+				"main",
+				"device",
+				"endpoint",
+				d->ieeeaddr,
+				1,
+				&blob);
+		if(ret != SQLITE_OK){
+			sqlitedb_destroy(db);
+			return 3;
+		}
+		int cursor = 0;
+		cursor+=sizeof(ActiveEpRspFormat_t) + sizeof(struct simpledesc)*epindex + sizeof(SimpleDescRspFormat_t) + sizeof(unsigned short);
+		ret = sqlite3_blob_write(blob, arm, sizeof(struct protocol_cmdtype_arm),cursor);
+		if( ret != SQLITE_OK){
+			const char* result = sqlite3_errmsg(db->db);
+			fprintf(stdout, "------------------ %s \n", result);
+			sqlite3_blob_close(blob);
+			sqlitedb_destroy(db);
+
+			return 4;
+		}
+
 		sqlite3_blob_close(blob);
 		sqlitedb_destroy(db);
-
-		return 4;
+		return 0;
 	}
-
-	sqlite3_blob_close(blob);
-	sqlitedb_destroy(db);
-
-	return 0;
+	return -1;
 }
 
 int sqlitedb_update_device_seq(unsigned long long ieee, unsigned char endpoint, char seq)
