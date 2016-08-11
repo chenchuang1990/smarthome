@@ -63,8 +63,14 @@ unsigned int protocol_encode_login(unsigned char *buf) {
 				e=list_entry(pos1, struct endpoint, list);
 				bytebuffer_writebyte(&p, e->simpledesc.simpledesc.Endpoint);
 				bytebuffer_writeword(&p,e->simpledesc.simpledesc.DeviceID);
-				if(e->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_IAS_ZONE){
+				if(e->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_IAS_ZONE) {
 					bytebuffer_writeword(&p,e->simpledesc.zonetype);
+				}
+				else if((e->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_MAINS_POWER_OUTLET) | 
+									(e->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_SHADE)) {
+					printf("endpoint:%d\n", e->simpledesc.simpledesc.Endpoint);
+					printf("device state:%d\n", e->simpledesc.device_state);
+					bytebuffer_writebyte(&p, e->simpledesc.device_state);
 				}
 			}
 		}

@@ -23,11 +23,13 @@
 #define DEVICE_SS_SEND_NO_ALARM_NOTIFICATION 512
 #define DEVICE_LEAVE_NET 1024 
 
+/*NOTE: when you want to add a new member*/
 struct simpledesc{
 	SimpleDescRspFormat_t simpledesc; 
 	unsigned short zonetype; // used for ss device
 	struct protocol_cmdtype_arm arm; // used for ss device
 	unsigned char zcl_transnum;		//used for ss device
+	unsigned char device_state;	//used for outlet and shade device
 }__attribute__((packed));
 
 struct endpoint{
