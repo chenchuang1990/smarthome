@@ -221,7 +221,6 @@ void sqlitedb_load_device(){
 	if (ret==SQLITE_OK){
 		while(sqlite3_step(stmt) == SQLITE_ROW){
 			ieee = sqlite3_column_int64(stmt,0);
-			printf("ieee:%llx\n", ieee);
 			shortaddr = sqlite3_column_int(stmt, 1);
 			memset(devicename, 0, MAXNAMELEN);
 			_sqlite3_gettext(stmt, 2, devicename);

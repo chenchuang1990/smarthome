@@ -1,11 +1,3 @@
-/*
-**copy the content of file from src to dst
-**@dst path name of the destination file
-**@src path name of the source file
-**There art two functions to copy the content of file from src to dst
-**Return 0 if successful, otherwise return 1
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -27,7 +19,7 @@ unsigned long long xlate_seqstr2seqnum(char *str)
 	unsigned long long seqnum_h, seqnum_m, seqnum_l;
 	unsigned long long seqnum;
 	
-	for(i = 0;i < 3;str = NULL, i++) {
+	for(i = 0; i < 3; str = NULL, i++) {
 		subp[i] = strtok_r(str, ".", &out_ptr);
 		if(NULL == subp[i])
 			break;
@@ -68,8 +60,8 @@ unsigned long long load_sequence(char *path)
 	else if(size == PAGESIZE)
 		printf("warning:read size maybe overflow\n");
 	
-	buf[size -1] = 0;
-	
+	buf[size] = 0;
+
 	ret = xlate_seqstr2seqnum(buf);
 	
 	return ret;
