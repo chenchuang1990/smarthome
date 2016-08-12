@@ -56,6 +56,7 @@
 #include "dbgPrint.h"
 #include "commands.h"
 #include "sqlitedb.h"
+#include "list.h"
 
 #include "zcl.h"
 #include "gateway.h"
@@ -64,6 +65,7 @@
 #include "protocol_cmdtype.h"
 #include "zcl_datatype.h"
 #include "zcl_general.h"
+#include "zcl_ha.h"
 
 #include "key.h"
 
@@ -620,8 +622,6 @@ static uint8_t mtZdoSimpleDescRspCb(SimpleDescRspFormat_t *msg)
 		struct device * d = gateway_getdevice_shortaddr(msg->SrcAddr);
 		for (i = 0; i < msg->NumInClusters; i++)
 		{
-//			if(0x0006 == msg->InClusterList[i])
-//				d->is_onoffin = 1;
 			consolePrint("InClusterList[%d]: 0x%04X\n", i,
 					msg->InClusterList[i]);
 		}
@@ -1035,6 +1035,21 @@ static uint8_t mtZdoMgmtPermitJoinRspCb(MgmtPermitJoinRspFormat_t *msg)
 
 	return msg->Status;
 }
+
+void clear_device_state(struct device *d)
+{
+	struct list_head *pos, *n;
+	struct endpoint *ep;
+	
+	list_for_each_safe(pos,n,&d->eplisthead) {
+		ep = list_entry(pos, struct endpoint, list);
+		if(ep && (ZCL_HA_DEVICEID_MAINS_POWER_OUTLET == ep->simpledesc.simpledesc.DeviceID)) {
+			//ep->simpledesc.device_state = 0;
+			sqlitedb_update_device_state(d->ieeeaddr, ep->simpledesc.simpledesc.Endpoint, 0);
+		}
+	}
+}
+
 static uint8_t mtZdoEndDeviceAnnceIndCb(EndDeviceAnnceIndFormat_t *msg)
 {
 	consolePrint("mtZdoEndDeviceAnnceIndCb\n");
@@ -1116,15 +1131,15 @@ static uint8_t mtZdoEndDeviceAnnceIndCb(EndDeviceAnnceIndFormat_t *msg)
 		device_set_status(d, DEVICE_ACTIVE);
 	}
 	#endif
-	printf("check DEVICE_ACTIVE\n");
+	/*printf("check DEVICE_ACTIVE\n");
 	if(d && device_check_status(d, DEVICE_ACTIVE)) {
 		printf("report new device\n");
 		report_new_device(d);
 		//device_set_status(d, DEVICE_ACTIVE);
-	}
+	}*/
 	
-	//if(d && (((d->status & DEVICE_SEND_ACTIVEEP) == 0) || list_empty(&d->eplisthead))) {
-	if(d && ((d->status & DEVICE_SEND_ACTIVEEP) == 0)) {
+	if(d && (((d->status & DEVICE_SEND_ACTIVEEP) == 0) || list_empty(&d->eplisthead))) {
+	//if(d && ((d->status & DEVICE_SEND_ACTIVEEP) == 0)) {
 		consolePrint("mtZdoEndDeviceAnnceIndCb: request active_ep_req\n");
 		//	d->status |= DEVICE_SEND_ACTIVEEP;
 		device_set_status(d, DEVICE_SEND_ACTIVEEP);
@@ -1133,6 +1148,15 @@ static uint8_t mtZdoEndDeviceAnnceIndCb(EndDeviceAnnceIndFormat_t *msg)
 		queryep.NwkAddrOfInterest = msg->NwkAddr;
 		queryep.DstAddr = msg->SrcAddr;
 		sendcmd((unsigned char *)&queryep, ZDO_ACTIVE_EP_REQ);
+	}
+	else if(d && device_check_status(d, DEVICE_ACTIVE)) {
+		printf("report new device\n");
+		report_new_device(d);
+		//device_set_status(d, DEVICE_ACTIVE);
+	}
+
+	if(d && !list_empty(&d->eplisthead)) {
+		clear_device_state(d);
 	}
 
 	return 0;
@@ -1341,7 +1365,7 @@ static uint8_t mtAfIncomingMsgCb(IncomingMsgFormat_t *msg)
 //#endif	
 	struct device * d = gateway_getdevice_shortaddr(msg->SrcAddr);
 	if(d){ 
-		d->status |= DEVICE_ACTIVE;
+		//d->status |= DEVICE_ACTIVE;
 		zcl_proccessincomingmessage(msg);
 		//d->timestamp = time(NULL);
 	}

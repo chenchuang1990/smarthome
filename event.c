@@ -53,7 +53,7 @@ int _check_command(unsigned char * buffer, int buflen, unsigned char command){
 	return 0;
 }
 
-void print_hex(unsigned char *addr, int len)
+static void print_hex(unsigned char *addr, int len)
 {
 	int i;
 	for(i = 0; i < len; i++) 
@@ -84,6 +84,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 			int serverfd = connlist_getserverfd();
 			if(serverfd != -1){
 				unsigned int buflen = protocol_encode_login(buf); 
+				print_hex(buf, buflen);
 				sendnonblocking(serverfd, buf, buflen);				
 				login_time = time(NULL);
 				printf("[event_recvmsg]login_time:%lx\n", login_time);
@@ -241,15 +242,15 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						 }
 					     sendnonblocking(g_main_to_znp_write_fd, &warning_ieee_cmd, sizeof(struct protocol_cmdtype_warning_ieee_cmd)); 
 						 /*cc's idea*/
-						 struct zclgeneraldefaultresponse levelctl_rsp;
+						 struct zclgeneraldefaultresponse warning_rsp;
 
-						levelctl_rsp.cmd_ind = 0;
-						levelctl_rsp.endpoint = warning_ieee_cmd.warning_ieee.warning.endpoint;
-						levelctl_rsp.ieeeaddr = warning_ieee_cmd.warning_ieee.ieee;
-						levelctl_rsp.serialnum = warning_ieee_cmd.warning_ieee.warning.serialnum;
-						levelctl_rsp.status = 0;
+						warning_rsp.cmd_ind = 0;
+						warning_rsp.endpoint = warning_ieee_cmd.warning_ieee.warning.endpoint;
+						warning_rsp.ieeeaddr = warning_ieee_cmd.warning_ieee.ieee;
+						warning_rsp.serialnum = warning_ieee_cmd.warning_ieee.warning.serialnum;
+						warning_rsp.status = 0;
 						unsigned char sbuf[128] = {0};
-						unsigned int sbuflen = protocol_encode_warning_response(sbuf, &levelctl_rsp);
+						unsigned int sbuflen = protocol_encode_warning_response(sbuf, &warning_rsp);
 						 //broadcast(sbuf, sbuflen);
 						sendnonblocking(fd, sbuf, sbuflen);
 				     }
@@ -282,8 +283,8 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 							 	result = 1;
 							 }	
 					     }
-						 else 
-						 	result = 1;
+						 //else 
+						 //	result = 1;
 					     unsigned char sbuf[128] = {0};
 					     unsigned int sbuflen = protocol_encode_arm_feedback(sbuf, serialnum, ieee, result);
 					     sendnonblocking(fd, sbuf, sbuflen);						 
@@ -305,6 +306,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 					 break;
 				case DEVICE_LEVEL_CTRL:
 				     {
+					 	printf("DEVICE_LEVEL_CTRL\n");
 					     struct protocol_cmdtype_level_ctrl_ieee_cmd level_ctrl_ieee_cmd;
 					     level_ctrl_ieee_cmd.cmdid = PROTOCOL_LEVEL_CTRL;
 					     protocol_parse_level_ctrl(buffer, messagelen, &level_ctrl_ieee_cmd.level_ctrl_ieee);
@@ -312,6 +314,12 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 							fprintf(stdout, "device has been deleted\n");
 							break;
 						 }
+						 struct endpoint * ep = gateway_get_endpoint(level_ctrl_ieee_cmd.level_ctrl_ieee.ieee, level_ctrl_ieee_cmd.level_ctrl_ieee.endpoint);
+						 if(!ep) {
+							 printf("event_recvmsg::no ep\n");
+							 break;
+						 } 
+						 ep->simpledesc.device_state = level_ctrl_ieee_cmd.level_ctrl_ieee.level_ctrl_cmd.move2level.level;
 					     sendnonblocking(g_main_to_znp_write_fd, &level_ctrl_ieee_cmd, sizeof(struct protocol_cmdtype_level_ctrl_ieee_cmd));
 				     }
 					 break;
@@ -438,6 +446,8 @@ int seq_after(struct device *d, unsigned char a, unsigned char b)
 		return ((char)b - (char)a < 0);
 }
 #endif
+
+
 void event_recvznp(struct eventhub * hub, int fd){ 
 	unsigned char buf[128] = {0};
 	unsigned int buflen = 0;
@@ -557,6 +567,8 @@ void event_recvznp(struct eventhub * hub, int fd){
 				readnonblocking(fd, &onoff_rsp, sizeof(onoff_rsp));
 				
 				buflen = protocol_encode_onoff_response(buf, &onoff_rsp);
+				int ret = sqlitedb_update_device_state(onoff_rsp.ieeeaddr, onoff_rsp.endpoint, onoff_rsp.cmd_ind);
+				printf("event_recvznp::ZCLGENONOFFRSP:%d\n", ret);
 				broadcast(buf, buflen);				
 			}	
 			break;			
@@ -573,17 +585,21 @@ void event_recvznp(struct eventhub * hub, int fd){
 			{
 				struct zclgeneraldefaultresponse levelctl_rsp;
 				readnonblocking(fd, &levelctl_rsp, sizeof(levelctl_rsp));
-				
+
 				buflen = protocol_encode_level_response(buf, &levelctl_rsp);
+				if(0 == levelctl_rsp.status) {
+					struct endpoint *ep = gateway_get_endpoint(levelctl_rsp.ieeeaddr, levelctl_rsp.endpoint);  
+					sqlitedb_update_device_state(levelctl_rsp.ieeeaddr, levelctl_rsp.endpoint, ep->simpledesc.device_state);
+				}
 				broadcast(buf, buflen);
 			}
 			break;
 		case ZCLWARNINGRSP:
 			{
-				struct zclgeneraldefaultresponse levelctl_rsp;
-				readnonblocking(fd, &levelctl_rsp, sizeof(levelctl_rsp));
+				struct zclgeneraldefaultresponse warning_rsp;
+				readnonblocking(fd, &warning_rsp, sizeof(warning_rsp));
 				
-				buflen = protocol_encode_warning_response(buf, &levelctl_rsp);
+				buflen = protocol_encode_warning_response(buf, &warning_rsp);
 				broadcast(buf, buflen);
 			}
 			break;

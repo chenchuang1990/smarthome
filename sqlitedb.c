@@ -225,7 +225,7 @@ void sqlitedb_load_device(){
 			memset(devicename, 0, MAXNAMELEN);
 			_sqlite3_gettext(stmt, 2, devicename);
 			status = sqlite3_column_int(stmt,3);
-			status &= ~DEVICE_ACTIVE;
+			//status &= ~DEVICE_ACTIVE;
 			zclversion = sqlite3_column_int(stmt,4);
 			applicationversion = sqlite3_column_int(stmt,5);
 			stackversion = sqlite3_column_int(stmt,6);
@@ -379,7 +379,7 @@ int sqlitedb_update_device_arm(unsigned long long ieee, unsigned char endpoint, 
 		sqlitedb_destroy(db);
 		return 0;
 	}
-	return -1;
+	return 5;
 }
 
 int sqlitedb_update_device_seq(unsigned long long ieee, unsigned char endpoint, char seq)
@@ -423,6 +423,46 @@ int sqlitedb_update_device_seq(unsigned long long ieee, unsigned char endpoint, 
 	return 0;
 }
 
+int sqlitedb_update_device_state(unsigned long long ieee, unsigned char endpoint, char state)
+{
+	struct device * d = gateway_getdevice(getgateway(), ieee);
+	int epindex = device_get_index(d, endpoint);
+	if(epindex == -1){
+		return 1;
+	}
+	struct sqlitedb * db = sqlitedb_create(DBPATH);
+	if(!db){
+		return 2;
+	}
+	sqlite3_blob * blob = NULL;
+	int ret = sqlite3_blob_open(db->db, 
+			"main",
+			"device",
+			"endpoint",
+			d->ieeeaddr,
+			1,
+			&blob);
+	if(ret != SQLITE_OK){
+		sqlitedb_destroy(db);
+		return 3;
+	}
+	int cursor = 0;
+	cursor+=sizeof(ActiveEpRspFormat_t) + sizeof(struct simpledesc)*epindex + sizeof(SimpleDescRspFormat_t) + sizeof(unsigned short) + sizeof(struct protocol_cmdtype_arm) + sizeof(char);
+	ret = sqlite3_blob_write(blob, &state, sizeof(char),cursor);
+	if( ret != SQLITE_OK){
+		const char* result = sqlite3_errmsg(db->db);
+		fprintf(stdout, "------------------ %s \n", result);
+		sqlite3_blob_close(blob);
+		sqlitedb_destroy(db);
+
+		return 4;
+	}
+
+	sqlite3_blob_close(blob);
+	sqlitedb_destroy(db);
+
+	return 0;
+}
 
 static const char sql_update_device_attr[] = "update device set status = %d, zclversion = %d, applicationversion = %d, stackversion = %d, hwversion = %d, manufacturername = '%s', modelidentifier = '%s', datecode = '%s' where ieee = %lld";
 
