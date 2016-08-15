@@ -287,8 +287,8 @@ int zclss_processincmd_zonestatus_enrollrequest(struct zclincomingmsg * pInMsg){
 	assert(d);
 	device_set_zonetype(d, pInMsg->message->SrcEndpoint, zoneType); 
 
-	/*暂时去掉上报enroll*/
-	#if 0
+	/*暂时bu去掉上报enroll*/
+	//#if 0
 	struct zcl_zone_enroll_req_cmd enroll_cmd;
 	memset(&enroll_cmd, 0, sizeof(struct zcl_zone_enroll_req_cmd));
 	enroll_cmd.cmdid = ZCLZONEENROLLREQ;
@@ -301,7 +301,8 @@ int zclss_processincmd_zonestatus_enrollrequest(struct zclincomingmsg * pInMsg){
 	int n = write(g_znpwfd, &enroll_cmd, sizeof(struct zcl_zone_enroll_req_cmd));
 	fprintf(stdout, "********send add new device %llX %d %d\n", enroll_cmd.req.ieeeaddr, n, sizeof(struct zcl_zone_enroll_req_cmd));
 	assert(n == sizeof(struct zcl_zone_enroll_req_cmd));
-	#endif
+	//#endif
+	
 	// if ( stat == ZSuccess )
 	{
 		// Send a response back

@@ -5,12 +5,11 @@
 #include <signal.h>
 #include <string.h>
 
-#define BUFSIZE 100
-
 static struct sigaction sa_old;
 
-static void handle_segfault(int signum)
+void stack_backtrace(void)
 {
+#define BUFSIZE 100
 	void *buf[BUFSIZE] = {0};
 	char **strings;
 	int len, i;
@@ -24,11 +23,16 @@ static void handle_segfault(int signum)
 		printf("%s\n", strings[i]);
 	
 	free(strings);
+}
+
+static void handle_segfault(int signum)
+{
+	stack_backtrace();
 	sigaction(SIGSEGV, &sa_old, NULL);
 	exit(1);
 }
 
-void catchsegfault(void)
+void sigaction_init(void)
 {
 	struct sigaction sa_segv;
 	sa_segv.sa_flags = 0;
@@ -36,4 +40,5 @@ void catchsegfault(void)
 
 	sigaction(SIGSEGV, &sa_segv, &sa_old);
 }
+
 

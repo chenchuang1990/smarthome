@@ -34,6 +34,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <unistd.h>
 #include "eventhub.h"
 #include "connection.h"
 #include "toolkit.h"
@@ -47,23 +48,39 @@
 #include "sqlitedb.h"
 #include "key.h"
 #include "network_test.h"
+#include "sequence.h"
 
 #define CATCH_SEGFAULT
 
 #define APP_TIME 0x0624
 
+#define SRCPATH "/media/mmcblk0p1/srcseq.txt"
+#define DSTPATH "/home/root/dstseq.txt"
+
 int g_main_to_znp_write_fd = -1;
+
 int main() 
 {
 	//ceconf_load();
 	printf("test version :%04x\n", APP_TIME);
 	//system("ntpdate s2m.time.edu.cn");
 	#ifdef CATCH_SEGFAULT
-	catchsegfault();
+	sigaction_init();
 	#endif
-	sqlitedb_table_build(DBPATH);
 
-	unsigned long long mac = toolkit_getmac();
+	sqlitedb_table_build(DBPATH);
+	
+	if(0 == access(SRCPATH, F_OK)) {
+		printf("toolkit_copy2...\n");
+		toolkit_copy2(DSTPATH, SRCPATH);
+	}
+	unsigned long long mac = load_sequence(DSTPATH);
+	printf("mac is %llx\n", mac);
+	if(0 == mac) {
+		printf("load_sequence error\n");
+		return -1;
+	}
+	//unsigned long long mac = toolkit_getmac();
 	if(sqlitedb_load_gateway_name(DBPATH, mac)) { 
 		gateway_init(getgateway(), mac, "网关", 1, 1);
 		sqlitedb_add_gateway(mac, "网关"); 

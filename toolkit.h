@@ -5,5 +5,7 @@ void toolkit_printbytes(unsigned char* buf, unsigned int len);
 void toolkit_backtrace(void);
 unsigned long long toolkit_getmac();
 unsigned char toolkit_in_period(unsigned char starthour, unsigned char startminute, unsigned char endhour, unsigned char endminute, unsigned char targethour, unsigned char targetminute);
+int toolkit_copy(char *dst, char *src);
+int toolkit_copy2(char *dst, char *src);
 
 #endif

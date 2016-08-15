@@ -1,9 +1,33 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include "gateway.h"
 #include "list.h"
 #include "protocol.h"
 #include "zcl_ha.h"
 #include "bytebuffer.h"
+
+unsigned short find_zonetye_from_device(struct device *d, char endpoint) 
+{
+#define EPMASK 0xff0000
+	int i;
+	unsigned short zonetype;
+	
+	for(i = 0; i < 8; i++) {
+		if((d->endpoint_zonetype[i] & EPMASK) >> 16 == endpoint) {
+			printf("find_zonetye_from_device::endpoint_zonetype:%x\n", d->endpoint_zonetype[i]);
+			break;
+		}
+	}
+	if(i < 8) {
+		zonetype = (d->endpoint_zonetype[i] & ~EPMASK);
+		d->endpoint_zonetype[i] = 0;
+		printf("find_zonetye_from_device::%x\n", zonetype);
+		return zonetype;
+	}
+	printf("find_zonetye_from_device::no match\n");
+	return 0;
+}
+
 //添加 设备
 //ce 
 //00 19 
@@ -29,7 +53,7 @@
 //校验码 (从开头到校验位前一位的^)
 //标识位 1 byte
 //-------
-unsigned int protocol_encode_add_del_device(unsigned char * buf, unsigned long long ieeeaddr, unsigned char add){
+unsigned int protocol_encode_add_del_device(unsigned char * buf, unsigned long long ieeeaddr, unsigned char add) {
 	unsigned char * p = buf;
 	bytebuffer_writebyte(&p,PROTOCOL_START_FLAG);
 	bytebuffer_writeword(&p,0x0000); 
@@ -50,6 +74,11 @@ unsigned int protocol_encode_add_del_device(unsigned char * buf, unsigned long l
 		bytebuffer_writebyte(&p, e->simpledesc.simpledesc.Endpoint);
 		bytebuffer_writeword(&p,e->simpledesc.simpledesc.DeviceID);
 		if(e->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_IAS_ZONE){
+			/*modifid by cc start*/
+			if(0 == e->simpledesc.zonetype) {
+				e->simpledesc.zonetype = find_zonetye_from_device(d, e->simpledesc.simpledesc.Endpoint);
+			}
+			/*modifid by cc end*/
 			bytebuffer_writeword(&p, e->simpledesc.zonetype);
 		}	
 	}
