@@ -646,7 +646,7 @@ void event_send_warning(struct endpoint * wd_ep, unsigned long long warning_devi
 	//warning_ieee_cmd.warning_ieee.warning.start_warning.warningmessage.warningbits.warnSirenLevel = SS_IAS_SIREN_LEVEL_MEDIUM_LEVEL_SOUND;
 	warning_ieee_cmd.warning_ieee.warning.start_warning.warningmessage.warningbits.warnSirenLevel = SS_IAS_SIREN_LEVEL_LOW_LEVEL_SOUND;
 	//warning_ieee_cmd.warning_ieee.warning.start_warning.warningDuration = 0xffff;
-	warning_ieee_cmd.warning_ieee.warning.start_warning.warningDuration = 1;
+	warning_ieee_cmd.warning_ieee.warning.start_warning.warningDuration = 2;
 	warning_ieee_cmd.warning_ieee.warning.start_warning.strobeDutyCycle = 1; // magic number
 	//warning_ieee_cmd.warning_ieee.warning.start_warning.strobeLevel = SS_IAS_STROBE_LEVEL_MEDIUM_LEVEL_STROBE;
 	warning_ieee_cmd.warning_ieee.warning.start_warning.strobeLevel = SS_IAS_STROBE_LEVEL_LOW_LEVEL_STROBE;
