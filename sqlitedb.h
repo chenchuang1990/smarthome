@@ -34,5 +34,6 @@ int sqlitedb_update_gatewayname(unsigned long long mac, char * name);
 int sqlitedb_update_devicename(unsigned long long ieee, char * name);
 void sqlitedb_delete_device(unsigned long long ieee);
 int sqlitedb_update_device_seq(unsigned long long ieee, unsigned char endpoint, char seq);
+int sqlitedb_update_device_state(unsigned long long ieee, unsigned char endpoint, char state);
 
 #endif

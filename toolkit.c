@@ -7,8 +7,15 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "bytebuffer.h"
+
+#define RECVSIZE 512
+
 
 void toolkit_printbytes(unsigned char* buf, unsigned int len){
 	unsigned int i;
@@ -108,4 +115,73 @@ unsigned char toolkit_in_period(unsigned char starthour, unsigned char startminu
 	}
 
 	return 1;
+}
+
+
+int toolkit_copy2(char *dst, char *src)
+{
+	int in_fd, out_fd, size, ret;
+	char buf[RECVSIZE] = {0};
+	
+	in_fd = open(src, O_RDONLY);
+	if(-1 == in_fd) {
+		perror("in_fd");
+		return -1;
+	}
+	
+	size = read(in_fd, buf, RECVSIZE);
+	if(-1 == size) {
+		perror("read");
+		return -1;
+	}
+	else if(size == RECVSIZE)
+		printf("warning:read size maybe overflow\n");
+	
+	out_fd = open(dst, O_CREAT | O_RDWR);
+	if(-1 == out_fd) {
+		perror("out_fd");
+		return -1;
+	}
+	
+	ret = write(out_fd, buf, size);
+	if(-1 == ret) {
+		perror("write");
+		return -1;
+	}
+	
+	return 0;
+}
+
+int toolkit_copy(char *dst, char *src)
+{
+	FILE *in_fd = fopen(src,"rb"); 
+	if(!in_fd) {
+		perror("in_fd");
+		return -1;
+	}
+	
+	FILE *out_fd = fopen(dst,"wb"); 
+	if(!out_fd) {
+		perror("out_fd");
+		return -1;
+	}
+
+	if(-1 == access(dst, W_OK)) {
+		perror("access");
+		return -1;
+	}
+	
+	char buf[RECVSIZE];
+	size_t n = 0;
+
+	while (n != EOF) {
+		n = fread(buf, 1, RECVSIZE, in_fd);
+		if (n == 0)
+			break;
+		fwrite(buf, 1, n, out_fd);
+	}
+	fclose(in_fd);
+	fclose(out_fd);
+	
+	return 0;
 }
