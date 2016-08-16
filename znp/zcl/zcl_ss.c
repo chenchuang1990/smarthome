@@ -615,9 +615,9 @@ int handle_onoff_state(struct zclincomingmsg *zclin)
 
 int handle_levelctr_rsp(struct zclincomingmsg *zclin)
 {
-	struct zcl_general_default_response_cmd cmd;
+	struct zcl_levlctl_default_response_cmd cmd;
 	cmd.cmdid = ZCLGENLEVELCTLRSP;
-	cmd.req.cmd_ind = zclin->data[0];
+	//cmd.req.device_state= zclin->data[0];
 	cmd.req.status= zclin->data[1];
 	struct device * d = gateway_getdevice_shortaddr(zclin->message->SrcAddr);
 	if(d){
@@ -627,7 +627,7 @@ int handle_levelctr_rsp(struct zclincomingmsg *zclin)
 	}
 	cmd.req.serialnum = zclin->zclframehdr.transseqnum;
 
-	write(g_znpwfd, &cmd, sizeof(struct zcl_general_default_response_cmd));
+	write(g_znpwfd, &cmd, sizeof(struct zcl_levlctl_default_response_cmd));
 
 	return 0;
 }

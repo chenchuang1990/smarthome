@@ -237,6 +237,9 @@ void sqlitedb_load_device(){
 			memset(datecode, 0, 17);
 			_sqlite3_gettext(stmt,10,datecode);
 			struct device * d = device_create2(ieee,shortaddr, devicename, status, zclversion, applicationversion, stackversion, hwversion, manufacturername, modelidentifier, datecode);
+			//printf("ieee:%llx\n", ieee);
+			//printf("status:%x\n", status);
+			//printf("shortaddr:%x\n", shortaddr);
 			_sqlite3_load_device(stmt,11,d);
 			gateway_adddevice(getgateway(),d);
 
@@ -515,7 +518,7 @@ int sqlitedb_update_device_shortaddr(unsigned long long ieee, unsigned short sho
 }
 
 /******added by cc********/
-static const char sql_delete_device[] = "delete from device where mac=%lld";
+static const char sql_delete_device[] = "delete from device where ieee=%lld";
 
 void sqlitedb_delete_device(unsigned long long ieee)
 {

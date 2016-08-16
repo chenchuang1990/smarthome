@@ -70,7 +70,7 @@ unsigned int protocol_encode_readonoff_response(unsigned char *buf, struct zclre
 	return p-buf;
 }
 
-unsigned int protocol_encode_level_response(unsigned char *buf, struct zclgeneraldefaultresponse *response) 
+unsigned int protocol_encode_level_response(unsigned char *buf, struct zcllevlctldefaultresponse *response) 
 {
 	unsigned char *p = buf;
 	bytebuffer_writebyte(&p,PROTOCOL_START_FLAG);
@@ -79,7 +79,7 @@ unsigned int protocol_encode_level_response(unsigned char *buf, struct zclgenera
 	bytebuffer_writedword(&p, response->serialnum);
 	bytebuffer_writequadword(&p,response->ieeeaddr);
 	bytebuffer_writebyte(&p,response->endpoint);
-	bytebuffer_writebyte(&p,response->cmd_ind);
+	bytebuffer_writebyte(&p,response->device_state);
 	bytebuffer_writebyte(&p,response->status);
 
 	unsigned char * len = buf + 1;

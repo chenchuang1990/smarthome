@@ -106,6 +106,22 @@ struct __attribute__((packed))zcl_general_default_response_cmd {
 	struct zclgeneraldefaultresponse req;
 };
 
+
+struct __attribute__((packed))zcllevlctldefaultresponse {
+	unsigned long long ieeeaddr;
+	unsigned int serialnum;
+	unsigned short clusterid;
+	unsigned char endpoint;
+	unsigned char device_state;
+	unsigned char status;
+};
+
+struct __attribute__((packed))zcl_levlctl_default_response_cmd {
+	unsigned int cmdid;
+	struct zcllevlctldefaultresponse req;
+};
+
+
 struct __attribute__((packed))zclbasicstatus {
 	unsigned long long ieeeaddr;
 	unsigned char status;
