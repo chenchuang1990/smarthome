@@ -28,6 +28,7 @@
 #include "zcl_general.h"
 
 //#define DEBUG_EP 1
+//#define DEBUG
 
 extern int g_main_to_znp_write_fd;
 extern struct connection * g_serverconn;
@@ -55,10 +56,12 @@ int _check_command(unsigned char * buffer, int buflen, unsigned char command){
 
 static void print_hex(unsigned char *addr, int len)
 {
+#ifdef DEBUG
 	int i;
 	for(i = 0; i < len; i++) 
 		printf("%02x ", addr[i]);
 	printf("\n");
+#endif
 }
 
 extern int access_period;
@@ -196,7 +199,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						if(d){
 							device_set_status(d, DEVICE_APP_DEL);
 							sqlitedb_delete_device(del_device.ieee);							
-							gateway_deldevice(getgateway(), d);							
+							gateway_deldevice(getgateway(), d);	
 							result = 0;
 						}
 						unsigned char sbuf[128] = {0}; 
@@ -261,6 +264,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 					     unsigned int sbuflen = protocol_encode_login(sbuf); 
 
 					     sendnonblocking(fd, sbuf, sbuflen);
+						 print_hex(sbuf, sbuflen);
 						 login_time = time(NULL);
 						 
 				     }
@@ -583,15 +587,18 @@ void event_recvznp(struct eventhub * hub, int fd){
 			break;
 		case ZCLGENLEVELCTLRSP:
 			{
-				struct zclgeneraldefaultresponse levelctl_rsp;
+				struct zcllevlctldefaultresponse levelctl_rsp;
 				readnonblocking(fd, &levelctl_rsp, sizeof(levelctl_rsp));
-
-				buflen = protocol_encode_level_response(buf, &levelctl_rsp);
-				if(0 == levelctl_rsp.status) {
-					struct endpoint *ep = gateway_get_endpoint(levelctl_rsp.ieeeaddr, levelctl_rsp.endpoint);  
-					sqlitedb_update_device_state(levelctl_rsp.ieeeaddr, levelctl_rsp.endpoint, ep->simpledesc.device_state);
+				
+				struct endpoint *ep = gateway_get_endpoint(levelctl_rsp.ieeeaddr, levelctl_rsp.endpoint); 
+				if(ep) {
+					levelctl_rsp.device_state = ep->simpledesc.device_state;
+					if(0 == levelctl_rsp.status)
+						sqlitedb_update_device_state(levelctl_rsp.ieeeaddr, levelctl_rsp.endpoint, levelctl_rsp.device_state);
+				
+					buflen = protocol_encode_level_response(buf, &levelctl_rsp);
+					broadcast(buf, buflen);
 				}
-				broadcast(buf, buflen);
 			}
 			break;
 		case ZCLWARNINGRSP:
