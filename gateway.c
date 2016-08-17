@@ -136,6 +136,11 @@ int is_device_deleted(unsigned long long ieee)
 		return 1;
 }
 
+void device_clear_status(struct device * d, unsigned int status) { 
+	d->status &= ~status;
+	sqlitedb_update_device_status(d);
+}
+
 void device_set_status(struct device * d, unsigned int status) { 
 	d->status |= status;
 	sqlitedb_update_device_status(d);
