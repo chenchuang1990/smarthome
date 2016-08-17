@@ -68,8 +68,8 @@ unsigned int protocol_encode_login(unsigned char *buf) {
 				}
 				else if((e->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_MAINS_POWER_OUTLET) | 
 									(e->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_SHADE)) {
-					printf("endpoint:%d\n", e->simpledesc.simpledesc.Endpoint);
-					printf("device state:%d\n", e->simpledesc.device_state);
+					//printf("endpoint:%d\n", e->simpledesc.simpledesc.Endpoint);
+					//printf("device state:%d\n", e->simpledesc.device_state);
 					bytebuffer_writebyte(&p, e->simpledesc.device_state);
 				}
 			}

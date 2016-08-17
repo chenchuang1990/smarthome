@@ -1140,9 +1140,12 @@ static uint8_t mtZdoEndDeviceAnnceIndCb(EndDeviceAnnceIndFormat_t *msg)
 	
 	if(d && (((d->status & DEVICE_SEND_ACTIVEEP) == 0) || list_empty(&d->eplisthead))) {
 	//if(d && ((d->status & DEVICE_SEND_ACTIVEEP) == 0)) {
-		consolePrint("mtZdoEndDeviceAnnceIndCb: request active_ep_req\n");
-		//	d->status |= DEVICE_SEND_ACTIVEEP;
-		device_set_status(d, DEVICE_SEND_ACTIVEEP);
+		consolePrint("mtZdoEndDeviceAnnceIndCb: request active_ep_req\n");		
+		//device_set_status(d, DEVICE_SEND_ACTIVEEP);
+		d->status |= DEVICE_SEND_ACTIVEEP;
+		d->status &= ~DEVICE_SEND_SIMPLEDESC;
+		sqlitedb_update_device_status(d);
+		
 		ActiveEpReqFormat_t queryep;
 		memset(&queryep, 0, sizeof(ActiveEpReqFormat_t));
 		queryep.NwkAddrOfInterest = msg->NwkAddr;

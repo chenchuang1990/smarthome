@@ -90,6 +90,8 @@ static inline void device_increase(struct device * d){
 	d->epcursor++;
 }
 
+void device_clear_status(struct device * d, unsigned int status);
+
 void device_set_status(struct device * d, unsigned int status);
 
 static inline int device_check_status(struct device * d, unsigned int status){
