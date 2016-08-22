@@ -49,6 +49,7 @@
 #include "key.h"
 #include "network_test.h"
 #include "sequence.h"
+#include "addtion.h"
 
 #define CATCH_SEGFAULT
 
@@ -67,7 +68,7 @@ int main()
 	#ifdef CATCH_SEGFAULT
 	sigaction_init();
 	#endif
-
+	check_usb_function();
 	sqlitedb_table_build(DBPATH);
 	
 	if(0 == access(SRCPATH, F_OK)) {
