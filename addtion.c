@@ -9,7 +9,7 @@
 #include "key.h"
 
 
-#define SDA_PATH "/media/sda1"
+#define SDA_PATH "/media/sda1/srcseq.txt "
 
 #define LED_ALL 0xff
 

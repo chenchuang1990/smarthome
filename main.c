@@ -53,7 +53,7 @@
 
 #define CATCH_SEGFAULT
 
-#define APP_TIME 0x0624
+#define APP_TIME 0x0823
 
 #define SRCPATH "/media/mmcblk0p1/srcseq.txt"
 #define DSTPATH "/home/root/dstseq.txt"

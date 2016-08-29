@@ -96,17 +96,19 @@ int openclient(char *addr, char *port)
 
 #ifdef _USE_DNS 
 	char hostname[64];
-	struct hostent *host;
-
+	struct hostent hostinfo, *phost;
+	int ret, h_errno;
+	char tempbuf[1024];
+	
 	sprintf(hostname, "%s", addr);
  
-	if((host=gethostbyname(hostname))==NULL) 
-	{
-		printf("[openclient]  error : Can't get serverhost info!\n");
-		return -1;
+	ret = gethostbyname_r(hostname, &hostinfo, tempbuf, sizeof(tempbuf), &phost, &h_errno);
+ 	if((0 == ret) && phost)		
+		bcopy((char*)phost->h_addr, (char*)&servaddr.sin_addr, phost->h_length);	
+	else {		
+		perror("gethostbyname_r");		
+		return 0;	
 	}
- 
-	bcopy((char*)host->h_addr,(char*)&servaddr.sin_addr,host->h_length);
 #else
 	servaddr.sin_addr.s_addr = inet_addr(addr);
 #endif
@@ -136,7 +138,8 @@ struct connection * connectserver(){
 	return serverconn;
 }
 
-struct connection * createpipe(int * wfd){
+struct connection * createpipe(int * wfd) 
+{
 	int fdsig[2];
 	if(pipe2(fdsig,O_CLOEXEC) == -1){
 		fprintf(stderr,"create pipe error.%s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
