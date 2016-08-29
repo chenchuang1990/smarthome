@@ -106,8 +106,8 @@ int openclient(char *addr, char *port)
  	if((0 == ret) && phost)		
 		bcopy((char*)phost->h_addr, (char*)&servaddr.sin_addr, phost->h_length);	
 	else {		
-		perror("gethostbyname_r");		
-		return 0;	
+		perror("[openclient]gethostbyname_r");		
+		return -1;	
 	}
 #else
 	servaddr.sin_addr.s_addr = inet_addr(addr);
