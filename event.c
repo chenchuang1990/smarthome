@@ -273,22 +273,27 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 				     {
 					 	printf("DEVICE_SETARM\n");
 					     struct protocol_cmdtype_arm arm;
+						 unsigned char result;
 					     unsigned int serialnum = 0;
 					     unsigned char endpoint = 0;
 					     unsigned long long ieee = protocol_parse_arm(buffer, messagelen, &arm, &serialnum, &endpoint);
-					     unsigned char result = (unsigned char)sqlitedb_update_device_arm(ieee, endpoint, &arm);
-					     //result = (result == 0)?1:0;
-					     if(result == 0){ 
-						     struct endpoint * ep = gateway_get_endpoint(ieee, endpoint);
-							 if(ep) {
-						     	memcpy(&ep->simpledesc.arm, &arm, sizeof(struct protocol_cmdtype_arm));
-							 }
-							 else {
-							 	result = 1;
-							 }	
-					     }
-						 //else 
-						 //	result = 1;
+						 
+						 if(arm.starthour < 24 && arm.startminute < 60 && arm.endhour < 24 && arm.endminute < 60) {
+						     result = (unsigned char)sqlitedb_update_device_arm(ieee, endpoint, &arm);
+						     //result = (result == 0)?1:0;
+						     if(result == 0){ 
+							     struct endpoint * ep = gateway_get_endpoint(ieee, endpoint);
+								 if(ep) {
+							     	memcpy(&ep->simpledesc.arm, &arm, sizeof(struct protocol_cmdtype_arm));
+								 }
+								 else {
+								 	result = 1;
+								 }	
+						     }
+						 }
+						 else 
+						 	result = 1;
+						 
 					     unsigned char sbuf[128] = {0};
 					     unsigned int sbuflen = protocol_encode_arm_feedback(sbuf, serialnum, ieee, result);
 					     sendnonblocking(fd, sbuf, sbuflen);						 
@@ -520,7 +525,7 @@ void event_recvznp(struct eventhub * hub, int fd){
 					printf("last seqence num:%d\n", ep->simpledesc.zcl_transnum);
 					if(seq_after(sensor, req.trans_num, ep->simpledesc.zcl_transnum)) {
 						if(endpoint_check_arm(ep, hour, minute)) {
-							if(0 == (req.ext_status & 0x80)) {
+							if(0 == (req.ext_status & 0x80)) {	//not heartbeat
 								printf("simpedisc.zonetype is %d\n", ep->simpledesc.zonetype);
 								if(req.zonechangenotification.zonestatus.alarm1 || req.zonechangenotification.zonestatus.alarm2) {
 									fprintf(stdout, "------start alarm\n");

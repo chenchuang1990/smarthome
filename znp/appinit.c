@@ -1348,12 +1348,12 @@ static uint8_t mtAfIncomingMsgCb(IncomingMsgFormat_t *msg)
 	//consolePrint("GroupId: 0x%04X\n", msg->GroupId);
 	consolePrint("ClusterId: 0x%04X\n", msg->ClusterId);
 //	consolePrint("SrcAddr: 0x%04X\n", msg->SrcAddr);
-//	consolePrint("SrcEndpoint: 0x%02X\n", msg->SrcEndpoint);
+	consolePrint("SrcEndpoint: 0x%02X\n", msg->SrcEndpoint);
 //	consolePrint("DstEndpoint: 0x%02X\n", msg->DstEndpoint);
 //	consolePrint("WasVroadcast: 0x%02X\n", msg->WasVroadcast);
 //	consolePrint("LinkQuality: 0x%02X\n", msg->LinkQuality);
 //	consolePrint("SecurityUse: 0x%02X\n", msg->SecurityUse);
-	consolePrint("TimeStamp: 0x%08X\n", msg->TimeStamp);
+//	consolePrint("TimeStamp: 0x%08X\n", msg->TimeStamp);
 	
 //	consolePrint("TransSeqNum: 0x%02X\n", msg->TransSeqNum);
 	consolePrint("Len: 0x%02X\n", msg->Len);
