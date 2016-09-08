@@ -179,6 +179,8 @@ static uint8_t setNVDevType(uint8_t devType);
 static int32_t startNetwork(void);
 static int32_t registerAf(void);
 
+
+
 /*********************************************************************
  * CALLBACK FUNCTIONS
  */

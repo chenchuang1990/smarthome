@@ -182,11 +182,12 @@ int sendnonblocking(int fd, void * buf, int buflen){
 			else {
 				fprintf(stdout, "errno %d error msg %s\n", errno,strerror(errno));
 				printf("fd is %d\n", fd);
-				assert(0);
+				//assert(0);
 				break;
 			}
 		} else if (n != buflen) {
-			assert(0);
+			fprintf(stdout, "Oh, no, n != buflen\n");
+			//assert(0);
 			break;
 		} else { break; }
 	}

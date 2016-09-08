@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include "connection.h"
 #include "ceconf.h"
+#include "eventhub.h"
 
 #define MAXBUFLEN 1024
 
@@ -102,12 +103,13 @@ int connlist_check(unsigned char conntype){
 	return 0;
 }
 
-void connlist_checkstatus(long timestamp){
+void connlist_checkstatus(struct eventhub * hub, long timestamp){
 	struct list_head * pos, *n;
 	list_for_each_safe(pos, n, &connlisthead){
 		struct connection * c = list_entry(pos, struct connection, list);
 		if((c->type == CONNSOCKETSERVER || c->type == CONNSOCKETCLIENT) && 
 				timestamp - c->timestamp > ceconf_gettimeout()){
+			eventhub_deregister(hub, c->fd);
 			connection_close(c);
 		}
 	}
