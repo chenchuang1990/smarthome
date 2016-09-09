@@ -40,8 +40,10 @@ void event_send_warning(struct endpoint * wd_ep, unsigned long long warning_devi
 
 void event_accept(int fd){
 	struct connection * c = freeconnlist_getconn();
-	connection_init(c, fd, CONNSOCKETCLIENT);
-	connrbtree_insert(c);
+	if(c) {
+		connection_init(c, fd, CONNSOCKETCLIENT);
+		connrbtree_insert(c);
+	}
 }
 
 
@@ -58,12 +60,12 @@ int _check_command(unsigned char * buffer, int buflen, unsigned char command){
 
 static void print_hex(unsigned char *addr, int len)
 {
-//#ifdef DEBUG
+#ifdef DEBUG
 	int i;
 	for(i = 0; i < len; i++) 
 		printf("%02x ", addr[i]);
 	printf("\n");
-//#endif
+#endif
 }
 
 extern int access_period;
@@ -453,6 +455,8 @@ extern struct gateway gatewayinstance;
 
 #define min(a,b) a>b?b:a
 
+/*add the code that report fucking devicename*/
+
 enum dn {
 	SWITCH,
 	SOCKET,
@@ -467,7 +471,7 @@ enum dn {
 	UNKNOWN
 };
 
-static char utf8_table[][32] = {{0xe9, 0x94, 0xae, 0xe5, 0xbc, 0x80, 0xe5, 0x85, 0xb3, 0},
+char utf8_table[][32] = {{0xe9, 0x94, 0xae, 0xe5, 0xbc, 0x80, 0xe5, 0x85, 0xb3, 0},
 								{0xe6, 0x8f, 0x92, 0xe5, 0xba, 0xa7, 0},
 								{0xe9, 0x97, 0xa8, 0xe7, 0xa3, 0x81, 0},
 								{0xe7, 0xba, 0xa2, 0xe5, 0xa4, 0x96, 0xe7, 0xa7, 0xbb, 0xe5, 0x8a, 0xa8, 0xe6, 0x8a, 0xa5, 0xe8, 0xad, 0xa6, 0},
@@ -484,8 +488,8 @@ int devicetype_valid(unsigned short devicetype)
 	if(ZCL_HA_DEVICEID_IAS_ANCILLARY_CONTROL_EQUIPMENT == devicetype || 
 		ZCL_HA_DEVICEID_IAS_ZONE == devicetype || 
 		ZCL_HA_DEVICEID_IAS_WARNING_DEVICE == devicetype || 
-		ZCL_HA_DEVICEID_SHADE == devicetype || 
-		ZCL_HA_DEVICEID_MAINS_POWER_OUTLET == devicetype)
+		ZCL_HA_DEVICEID_SHADE == devicetype) 
+		//|| ZCL_HA_DEVICEID_MAINS_POWER_OUTLET == devicetype)
 		return 1;
 	else 
 		return 0;
@@ -497,9 +501,13 @@ void set_devicename(struct device *d, unsigned short devicetypeid, unsigned shor
 	int slen = 0;
 	
 	switch(devicetypeid) {
+	#if 0
 	case ZCL_HA_DEVICEID_MAINS_POWER_OUTLET:
-		if(!strncasecmp(d->modelidentifier, "Z809", 4))
+		
+		printf("ZCL_HA_DEVICEID_MAINS_POWER_OUTLET:%s", d->modelidentifier);
+		if(!strncasecmp(d->modelidentifier, "Z-809", 5)) {
 			snprintf(name, sizeof(name), "%s", utf8_table[SOCKET]);
+		}
 		else if('F' == d->modelidentifier[0]) {
 			int i;
 			char *substrp[2];
@@ -521,7 +529,9 @@ void set_devicename(struct device *d, unsigned short devicetypeid, unsigned shor
 		}
 		else
 			snprintf(name, sizeof(name), "%d%s", epcnt, utf8_table[SWITCH]);
+		
 		break;
+	#endif
 	case ZCL_HA_DEVICEID_IAS_ZONE:
 		switch(zonetype) {
 		case SS_IAS_ZONE_TYPE_CONTACT_SWITCH:
@@ -555,13 +565,14 @@ void set_devicename(struct device *d, unsigned short devicetypeid, unsigned shor
 	}
 	slen = strlen(name); 
 	memcpy(d->devicename, name, min(slen, MAXNAMELEN-1));
-	toolkit_printbytes((unsigned char *)d->devicename, slen);
+	//toolkit_printbytes((unsigned char *)d->devicename, slen);
 	d->devicename[MAXNAMELEN-1] = 0;
+	sqlitedb_update_devicename(d->ieeeaddr, d->devicename);
 }
 
 void init_devicename(struct device *d)
 {
-	printf("init_devicename\n");
+	//printf("init_devicename\n");
 	struct list_head *pos, *n;
 	struct endpoint *ep;
 	if(0 == strlen(d->devicename)) {

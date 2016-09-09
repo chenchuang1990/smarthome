@@ -131,8 +131,12 @@ struct connection * connectserver(){
 	struct connection * serverconn = NULL;
 	if(fd != -1){
 		serverconn = freeconnlist_getconn();
-		connection_init(serverconn, fd, CONNSOCKETSERVER);
-		connrbtree_insert(serverconn);
+		if(serverconn) {
+			connection_init(serverconn, fd, CONNSOCKETSERVER);
+			connrbtree_insert(serverconn);
+		}
+		else
+			printf("connectserver::serverconn is NULL\n");
 	}
 
 	return serverconn;
@@ -152,9 +156,10 @@ struct connection * createpipe(int * wfd)
 	make_socket_non_blocking(fdsig[0]);
 
 	struct connection * conn = freeconnlist_getconn();
-	connection_init(conn, fdsig[0], CONNSOCKETCMD);
-	connrbtree_insert(conn);
-
+	if(conn) {
+		connection_init(conn, fdsig[0], CONNSOCKETCMD);
+		connrbtree_insert(conn);
+	}
 	return conn;
 }
 

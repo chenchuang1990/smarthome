@@ -14,9 +14,9 @@ unsigned int protocol_encode_set_name_feedback(unsigned char * buf, struct proto
 	bytebuffer_writedword(&p,device_name->serialnum);
 	bytebuffer_writequadword(&p, device_name->ieee);
 	bytebuffer_writebyte(&p,result);        
-	unsigned char devicenamelen = strlen(device_name->name);
-	bytebuffer_writebyte(&p, devicenamelen);
-	bytebuffer_writebytes(&p, (unsigned char *)device_name->name, devicenamelen);
+	//unsigned char devicenamelen = strlen(device_name->name);
+	bytebuffer_writebyte(&p, device_name->namelen);
+	bytebuffer_writebytes(&p, (unsigned char *)device_name->name, device_name->namelen);
 	unsigned char *p1=buf+1;                
 	bytebuffer_writeword(&p1,p-buf+2);    
 	unsigned checksum = protocol_checksum(buf,p-buf);

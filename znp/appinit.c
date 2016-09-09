@@ -1358,7 +1358,7 @@ static uint8_t mtAfIncomingMsgCb(IncomingMsgFormat_t *msg)
 //	consolePrint("TimeStamp: 0x%08X\n", msg->TimeStamp);
 	
 //	consolePrint("TransSeqNum: 0x%02X\n", msg->TransSeqNum);
-	consolePrint("Len: 0x%02X\n", msg->Len);
+//	consolePrint("Len: 0x%02X\n", msg->Len);
 //#if 0
 	uint32_t i;
 	printf("Data: ");

@@ -21,8 +21,8 @@ void protocol_parse_set_device_name( unsigned char * buf, unsigned short len, st
 	bytebuffer_skipbytes(&p, 5);
 	bytebuffer_readdword(&p, &name->serialnum);
 	bytebuffer_readquadword(&p, &name->ieee);
-	unsigned char namelen;
-	bytebuffer_readbyte(&p, &namelen);
-	bytebuffer_readbytes(&p, name->name, namelen);
-	name->name[namelen] = 0;
+	//unsigned char namelen;
+	bytebuffer_readbyte(&p, &name->namelen);
+	bytebuffer_readbytes(&p, name->name, name->namelen);
+	name->name[name->namelen] = 0;
 }

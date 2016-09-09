@@ -128,7 +128,12 @@ int main()
 	mainrfd = createpipe2(&znpwfd);
 	make_socket_non_blocking(mainrfd);
 	struct connection * znpconnection = freeconnlist_getconn();
-	connection_init(znpconnection, mainrfd, CONNZNP);
+	if(znpconnection)
+		connection_init(znpconnection, mainrfd, CONNZNP);
+	else {
+		printf("error:znpconnetcion is NULL!\n");
+		return -1;
+	}
 
 	// create pipe for main to znp
 	int mainwfd, znprfd;

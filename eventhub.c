@@ -90,13 +90,11 @@ void eventhub_start(struct eventhub * hub){
 
 					in_len = sizeof(in_addr);
 					infd = accept (hub->listenfd, &in_addr, &in_len);
-					printf("accept fd:%d\n", infd);
 					if (infd == -1) {
 						if ((errno == EAGAIN) ||
 						    (errno == EWOULDBLOCK)) {
 							/* We have processed all incoming
 							   connections. */
-							perror("accept:");
 							break;
 						} else {
 							fprintf(stdout,  "accept %s \n", strerror(errno));
@@ -133,53 +131,55 @@ void eventhub_start(struct eventhub * hub){
 				   data. */
 				int done = 0;
 				struct connection * c = connrbtree_getconn(events[i].data.fd);
-				if(connection_gettype(c) == CONNZNP){ 
-					event_recvznp(hub, events[i].data.fd);
-				}else{
-					for(;;) {
-						ssize_t count;
-						unsigned char buf[1024];
+				if(c) {
+					if(connection_gettype(c) == CONNZNP){ 
+						event_recvznp(hub, events[i].data.fd);
+					}else{
+						for(;;) {
+							ssize_t count;
+							unsigned char buf[1024];
 
-						count = read (events[i].data.fd, buf, sizeof buf);
-						if (count == -1) {
-							/* If errno == EAGAIN, that means we have read all
-							   data. So go back to the main loop. */
-							if (errno != EAGAIN)
-							{	
-								perror ("read");
+							count = read (events[i].data.fd, buf, sizeof buf);
+							if (count == -1) {
+								/* If errno == EAGAIN, that means we have read all
+								   data. So go back to the main loop. */
+								if (errno != EAGAIN)
+								{	
+									perror ("read");
+									done = 1;
+								}
+								
+								break;
+							} else if (count == 0) {
+								/* End of file. The remote has closed the
+								   connection. */
+								printf("remote is closed\n");
 								done = 1;
+								break;
+							} 
+							if(count > 1) {
+								printf("[eventhub_start] count: %d, receive:\n", count);
+								int cur;
+								for(cur = 0; cur < count; cur++)
+									printf("%02x ", buf[cur]);
+								printf("\n");
 							}
-							
-							break;
-						} else if (count == 0) {
-							/* End of file. The remote has closed the
-							   connection. */
-							printf("remote is closed\n");
-							done = 1;
-							break;
-						} 
-						if(count > 1) {
-							printf("[eventhub_start] count: %d, receive:\n", count);
-							int cur;
-							for(cur = 0; cur < count; cur++)
-								printf("%02x ", buf[cur]);
-							printf("\n");
-						}
-						if(!done){
-							event_recvmsg(hub, events[i].data.fd, buf, count);
-						}
+							if(!done){
+								event_recvmsg(hub, events[i].data.fd, buf, count);
+							}
 
+						}
 					}
-				}
 
-				if (done) {
-					printf ("Closed connection on descriptor %d\n", events[i].data.fd);
+					if (done) {
+						printf ("Closed connection on descriptor %d\n", events[i].data.fd);
 
-					/* Closing the descriptor will make epoll remove it
-					   from the set of descriptors which are monitored. */					
-					eventhub_deregister(hub, events[i].data.fd);
-					event_close(events[i].data.fd);
-					close(events[i].data.fd);
+						/* Closing the descriptor will make epoll remove it
+						   from the set of descriptors which are monitored. */					
+						eventhub_deregister(hub, events[i].data.fd);
+						event_close(events[i].data.fd);
+						close(events[i].data.fd);
+					}
 				}
 			}
 		}
