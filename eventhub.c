@@ -10,16 +10,9 @@
 #include "socket.h"
 #include "connection.h"
 #include "event.h"
-#include "eventhub.h"
+
 
 #define MAXEVENTS 64
-
-struct eventhub{
-	struct eventhubconf * conf;
-	int epollfd;
-	int listenfd;
-	struct epoll_event * events;
-};
 
 struct eventhub * eventhub_create(struct eventhubconf * conf){ 
 	struct eventhub * hub = (struct eventhub *)malloc(sizeof(struct eventhub));
@@ -49,6 +42,18 @@ void eventhub_register(struct eventhub * hub,int fd){
 		fprintf(stdout, "epoll add fail %s \n", strerror(errno));
 	}
 }
+
+void eventhub_deregister(struct eventhub * hub,int fd){
+	struct epoll_event event; 
+	event.data.fd = fd;
+	//event.events = EPOLLIN | EPOLLET;
+	event.events = EPOLLIN;
+	int ret = epoll_ctl(hub->epollfd, EPOLL_CTL_DEL, fd, &event);
+	if( ret == -1 ){
+		fprintf(stdout, "epoll add fail %s \n", strerror(errno));
+	}
+}
+
 
 void eventhub_start(struct eventhub * hub){
 	hub->listenfd = create_and_bind(hub->conf->port);
@@ -101,6 +106,10 @@ void eventhub_start(struct eventhub * hub){
 							hbuf, sizeof (hbuf),
 							sbuf, sizeof (sbuf),
 							NI_NUMERICHOST | NI_NUMERICSERV);
+					if(ret != 0) {
+						printf("getnameinfo:");
+						printf("%s\n", gai_strerror(ret));
+					}
 					if (ret== 0) {
 						fprintf(stdout, "Accepted connection on descriptor %d (host=%s, port=%s)\n", infd, hbuf, sbuf);
 					}
@@ -122,50 +131,55 @@ void eventhub_start(struct eventhub * hub){
 				   data. */
 				int done = 0;
 				struct connection * c = connrbtree_getconn(events[i].data.fd);
-				if(connection_gettype(c) == CONNZNP){ 
-					event_recvznp(hub, events[i].data.fd);
-				}else{
-					for(;;) {
-						ssize_t count;
-						unsigned char buf[1024];
+				if(c) {
+					if(connection_gettype(c) == CONNZNP){ 
+						event_recvznp(hub, events[i].data.fd);
+					}else{
+						for(;;) {
+							ssize_t count;
+							unsigned char buf[1024];
 
-						count = read (events[i].data.fd, buf, sizeof buf);
-						if (count == -1) {
-							/* If errno == EAGAIN, that means we have read all
-							   data. So go back to the main loop. */
-							if (errno != EAGAIN)
-							{
-								perror ("read");
+							count = read (events[i].data.fd, buf, sizeof buf);
+							if (count == -1) {
+								/* If errno == EAGAIN, that means we have read all
+								   data. So go back to the main loop. */
+								if (errno != EAGAIN)
+								{	
+									perror ("read");
+									done = 1;
+								}
+								
+								break;
+							} else if (count == 0) {
+								/* End of file. The remote has closed the
+								   connection. */
+								printf("remote is closed\n");
 								done = 1;
+								break;
+							} 
+							if(count > 1) {
+								printf("[eventhub_start] count: %d, receive:\n", count);
+								int cur;
+								for(cur = 0; cur < count; cur++)
+									printf("%02x ", buf[cur]);
+								printf("\n");
 							}
-							break;
-						} else if (count == 0) {
-							/* End of file. The remote has closed the
-							   connection. */
-							done = 1;
-							break;
-						} 
-						if(count > 1) {
-							printf("[eventhub_start] count: %d, receive:\n", count);
-							int cur;
-							for(cur = 0; cur < count; cur++)
-								printf("%02x ", buf[cur]);
-							printf("\n");
-						}
-						if(!done){
-							event_recvmsg(hub, events[i].data.fd, buf, count);
-						}
+							if(!done){
+								event_recvmsg(hub, events[i].data.fd, buf, count);
+							}
 
+						}
 					}
-				}
 
-				if (done) {
-					printf ("Closed connection on descriptor %d\n", events[i].data.fd);
+					if (done) {
+						printf ("Closed connection on descriptor %d\n", events[i].data.fd);
 
-					/* Closing the descriptor will make epoll remove it
-					   from the set of descriptors which are monitored. */
-					close (events[i].data.fd);
-					event_close(events[i].data.fd);
+						/* Closing the descriptor will make epoll remove it
+						   from the set of descriptors which are monitored. */					
+						eventhub_deregister(hub, events[i].data.fd);
+						event_close(events[i].data.fd);
+						close(events[i].data.fd);
+					}
 				}
 			}
 		}

@@ -38,7 +38,6 @@ unsigned int protocol_encode_login(unsigned char *buf) {
 	unsigned char gateway_name_len = strlen(gw->gatewayname);
 	bytebuffer_writebyte(&p, gateway_name_len);
 	bytebuffer_writebytes(&p, (unsigned char *)gw->gatewayname, gateway_name_len);
-	printf("boxversion:%d\n", gw->boxversion);
 	bytebuffer_writebyte(&p, gw->boxversion);
 	bytebuffer_writebyte(&p, gw->protocolversion);
 	unsigned short active_device_count = gateway_get_active_device_count();
@@ -54,6 +53,9 @@ unsigned int protocol_encode_login(unsigned char *buf) {
 			unsigned char devicenamelen = strlen(d->devicename);
 			bytebuffer_writebyte(&p, devicenamelen);
 			bytebuffer_writebytes(&p, (unsigned char *)d->devicename,devicenamelen);
+			//unsigned char modelidlen = strlen(d->modelidentifier);
+			//bytebuffer_writebyte(&p, modelidlen);
+			//bytebuffer_writebytes(&p, (unsigned char *)d->modelidentifier, modelidlen);
 			unsigned char devicetypeidcount = device_getepcount(d);
 			bytebuffer_writebyte(&p, devicetypeidcount);
 
@@ -68,8 +70,8 @@ unsigned int protocol_encode_login(unsigned char *buf) {
 				}
 				else if((e->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_MAINS_POWER_OUTLET) | 
 									(e->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_SHADE)) {
-					printf("endpoint:%d\n", e->simpledesc.simpledesc.Endpoint);
-					printf("device state:%d\n", e->simpledesc.device_state);
+					//printf("endpoint:%d\n", e->simpledesc.simpledesc.Endpoint);
+					//printf("device state:%d\n", e->simpledesc.device_state);
 					bytebuffer_writebyte(&p, e->simpledesc.device_state);
 				}
 			}

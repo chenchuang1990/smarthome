@@ -49,10 +49,11 @@
 #include "key.h"
 #include "network_test.h"
 #include "sequence.h"
+#include "addtion.h"
 
 #define CATCH_SEGFAULT
 
-#define APP_TIME 0x0624
+#define APP_TIME 0x0823
 
 #define SRCPATH "/media/mmcblk0p1/srcseq.txt"
 #define DSTPATH "/home/root/dstseq.txt"
@@ -67,7 +68,7 @@ int main()
 	#ifdef CATCH_SEGFAULT
 	sigaction_init();
 	#endif
-
+	check_usb_function();
 	sqlitedb_table_build(DBPATH);
 	
 	if(0 == access(SRCPATH, F_OK)) {
@@ -127,7 +128,12 @@ int main()
 	mainrfd = createpipe2(&znpwfd);
 	make_socket_non_blocking(mainrfd);
 	struct connection * znpconnection = freeconnlist_getconn();
-	connection_init(znpconnection, mainrfd, CONNZNP);
+	if(znpconnection)
+		connection_init(znpconnection, mainrfd, CONNZNP);
+	else {
+		printf("error:znpconnetcion is NULL!\n");
+		return -1;
+	}
 
 	// create pipe for main to znp
 	int mainwfd, znprfd;

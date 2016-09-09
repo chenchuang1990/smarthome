@@ -17,6 +17,7 @@ struct protocol_datatype_get_device_attr{
 struct protocol_datatype_set_device_name{
 	unsigned long long ieee;
 	unsigned int serialnum;
+	unsigned char namelen;
 	char name[256];
 };
 

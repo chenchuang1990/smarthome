@@ -136,6 +136,11 @@ int is_device_deleted(unsigned long long ieee)
 		return 1;
 }
 
+void device_clear_status(struct device * d, unsigned int status) { 
+	d->status &= ~status;
+	sqlitedb_update_device_status(d);
+}
+
 void device_set_status(struct device * d, unsigned int status) { 
 	d->status |= status;
 	sqlitedb_update_device_status(d);
@@ -146,7 +151,7 @@ struct endpoint * _device_get_enpint(struct device *d,  unsigned char endpoint){
 	struct endpoint * ep;
 	list_for_each_safe(pos, n, &d->eplisthead){
 		ep = list_entry(pos, struct endpoint, list); 
-		if(ep->simpledesc.simpledesc.Endpoint == endpoint){
+		if(ep && (ep->simpledesc.simpledesc.Endpoint == endpoint)){
 			return ep;
 		}
 	}
@@ -177,7 +182,7 @@ int device_get_index(struct device *d, unsigned char endpoint){
 	list_for_each_safe(pos, n, &d->eplisthead){
 		result++;
 		ep = list_entry(pos, struct endpoint, list); 
-		if(ep->simpledesc.simpledesc.Endpoint == endpoint){
+		if(ep && (ep->simpledesc.simpledesc.Endpoint == endpoint)){
 			return result;
 		}
 	}
@@ -190,7 +195,7 @@ int device_has_enpoint(struct device * d, unsigned char endpoint){
 	struct endpoint * ep;
 	list_for_each_safe(pos, n, &d->eplisthead){
 		ep = list_entry(pos, struct endpoint, list);
-		if(ep->simpledesc.simpledesc.Endpoint == endpoint){
+		if(ep && (ep->simpledesc.simpledesc.Endpoint == endpoint)){
 			return 1;
 		}
 	}
@@ -203,7 +208,7 @@ struct endpoint * device_get_endpoint(struct device * d, unsigned char endpoint)
 	struct endpoint * ep;
 	list_for_each_safe(pos, n, &d->eplisthead){
 		ep = list_entry(pos, struct endpoint, list);
-		if(ep->simpledesc.simpledesc.Endpoint == endpoint){
+		if(ep && (ep->simpledesc.simpledesc.Endpoint == endpoint)){
 			return ep;
 		}
 	}
@@ -216,7 +221,8 @@ void device_set_short_addr(struct device * d, unsigned short shortaddr){
 	struct list_head * pos, * n;
 	list_for_each_safe(pos, n, &d->eplisthead){ 
 		ep = list_entry(pos, struct endpoint, list);
-		ep->simpledesc.simpledesc.NwkAddr = shortaddr;
+		if(ep)
+			ep->simpledesc.simpledesc.NwkAddr = shortaddr;
 	}
 }
 
@@ -289,9 +295,11 @@ struct endpoint * gateway_get_endpoint_incluster(unsigned long long ieee, unsign
 		unsigned char i;
 		list_for_each_safe(pos, n, &d->eplisthead){
 			ep = list_entry(pos, struct endpoint, list); 
-			for(i = 0; i < ep->simpledesc.simpledesc.NumInClusters; i++){ 
-				if(ep->simpledesc.simpledesc.InClusterList[i] == clusterid){
-					return ep;
+			if(ep) {
+				for(i = 0; i < ep->simpledesc.simpledesc.NumInClusters; i++){ 
+					if(ep->simpledesc.simpledesc.InClusterList[i] == clusterid){
+						return ep;
+					}
 				}
 			}
 
@@ -320,7 +328,7 @@ struct endpoint * gateway_get_warning_device_endpoint(){
 		d = list_entry(pos, struct device, list); 
 		list_for_each_safe(eppos, epn, &d->eplisthead){
 			ep = list_entry(eppos, struct endpoint, list);
-			if(ep->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_IAS_WARNING_DEVICE){
+			if(ep && (ep->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_IAS_WARNING_DEVICE)){
 				return ep;
 			}
 		}
@@ -338,7 +346,7 @@ struct device * gateway_get_warning_device(){
 		d = list_entry(pos, struct device, list); 
 		list_for_each_safe(eppos, epn, &d->eplisthead){
 			ep = list_entry(eppos, struct endpoint, list);
-			if(ep->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_IAS_WARNING_DEVICE){
+			if(ep && (ep->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_IAS_WARNING_DEVICE)){
 				return d;
 			}
 		}

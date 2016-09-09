@@ -179,6 +179,8 @@ static uint8_t setNVDevType(uint8_t devType);
 static int32_t startNetwork(void);
 static int32_t registerAf(void);
 
+
+
 /*********************************************************************
  * CALLBACK FUNCTIONS
  */
@@ -1140,9 +1142,12 @@ static uint8_t mtZdoEndDeviceAnnceIndCb(EndDeviceAnnceIndFormat_t *msg)
 	
 	if(d && (((d->status & DEVICE_SEND_ACTIVEEP) == 0) || list_empty(&d->eplisthead))) {
 	//if(d && ((d->status & DEVICE_SEND_ACTIVEEP) == 0)) {
-		consolePrint("mtZdoEndDeviceAnnceIndCb: request active_ep_req\n");
-		//	d->status |= DEVICE_SEND_ACTIVEEP;
-		device_set_status(d, DEVICE_SEND_ACTIVEEP);
+		consolePrint("mtZdoEndDeviceAnnceIndCb: request active_ep_req\n");		
+		//device_set_status(d, DEVICE_SEND_ACTIVEEP);
+		d->status |= DEVICE_SEND_ACTIVEEP;
+		d->status &= ~DEVICE_SEND_SIMPLEDESC;
+		sqlitedb_update_device_status(d);
+		
 		ActiveEpReqFormat_t queryep;
 		memset(&queryep, 0, sizeof(ActiveEpReqFormat_t));
 		queryep.NwkAddrOfInterest = msg->NwkAddr;
@@ -1345,15 +1350,15 @@ static uint8_t mtAfIncomingMsgCb(IncomingMsgFormat_t *msg)
 	//consolePrint("GroupId: 0x%04X\n", msg->GroupId);
 	consolePrint("ClusterId: 0x%04X\n", msg->ClusterId);
 //	consolePrint("SrcAddr: 0x%04X\n", msg->SrcAddr);
-//	consolePrint("SrcEndpoint: 0x%02X\n", msg->SrcEndpoint);
+	consolePrint("SrcEndpoint: 0x%02X\n", msg->SrcEndpoint);
 //	consolePrint("DstEndpoint: 0x%02X\n", msg->DstEndpoint);
 //	consolePrint("WasVroadcast: 0x%02X\n", msg->WasVroadcast);
 //	consolePrint("LinkQuality: 0x%02X\n", msg->LinkQuality);
 //	consolePrint("SecurityUse: 0x%02X\n", msg->SecurityUse);
-	consolePrint("TimeStamp: 0x%08X\n", msg->TimeStamp);
+//	consolePrint("TimeStamp: 0x%08X\n", msg->TimeStamp);
 	
 //	consolePrint("TransSeqNum: 0x%02X\n", msg->TransSeqNum);
-	consolePrint("Len: 0x%02X\n", msg->Len);
+//	consolePrint("Len: 0x%02X\n", msg->Len);
 //#if 0
 	uint32_t i;
 	printf("Data: ");

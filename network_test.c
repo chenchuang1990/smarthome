@@ -59,7 +59,7 @@ int NetIsOk()
 {     
          
    // double rtt;
-    struct hostent *host;
+    struct hostent hostinfo, *phost;
     //struct protoent *protocol;
     int i, iFlag;
 	//int recv_status;
@@ -68,15 +68,17 @@ int NetIsOk()
     dest_addr.sin_family = AF_INET; 
 #ifdef _USE_DNS 
     char hostname[32];
-    sprintf(hostname,"%s","www.baidu.com");
- 
-    if((host=gethostbyname(hostname))==NULL) 
-    {
-        printf("[NetStatus]  error : Can't get serverhost info!\n");
-        return 0;
-    }
- 
-    bcopy((char*)host->h_addr,(char*)&dest_addr.sin_addr,host->h_length);
+	int ret, h_errno;
+	char tempbuf[1024];
+	
+    sprintf(hostname,"%s","www.baidu.com"); 
+   	ret = gethostbyname_r(hostname, &hostinfo, tempbuf, sizeof(tempbuf), &phost, &h_errno);
+ 	if((0 == ret) && phost)		
+		bcopy((char*)phost->h_addr, (char*)&dest_addr.sin_addr, phost->h_length);	
+	else {		
+		perror("[NetStatus] gethostbyname_r");		
+		return -1;	
+	}
 #else 
     dest_addr.sin_addr.s_addr = inet_addr("220.181.111.188");
 #endif
@@ -85,7 +87,7 @@ int NetIsOk()
     if ((listenfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) < 0) 
     {  
         printf("[NetStatus]  error : socket\n");
-        return 0;
+        return -1;
     }
  
     
@@ -93,14 +95,14 @@ int NetIsOk()
     {
         printf("[NetStatus]  error : fcntl(listenfd,F_GETFL,0)\n");
         _CloseSocket();
-        return 0;
+        return -1;
     }
     iFlag |= O_NONBLOCK;
     if((iFlag = fcntl(listenfd,F_SETFL,iFlag)) < 0)
     {
         printf("[NetStatus]  error : fcntl(listenfd,F_SETFL,iFlag )\n");
         _CloseSocket();
-        return 0;
+        return -1;
     }
  
     pid=getpid();
@@ -269,7 +271,7 @@ void *network_test_task(void *args)
 	while(1) {
 		is_ok = NetIsOk();
 		//fprintf(stdout, "network is %s\n", is_ok ? "ok" : "wrong");
-		if(is_ok) {
+		if(is_ok > 0) {
 			//if(!on_edge) {
 				//on_edge = 1;
 				set_led_onoff(LED_W, LED_ON);

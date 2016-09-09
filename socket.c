@@ -96,17 +96,19 @@ int openclient(char *addr, char *port)
 
 #ifdef _USE_DNS 
 	char hostname[64];
-	struct hostent *host;
-
+	struct hostent hostinfo, *phost;
+	int ret, h_errno;
+	char tempbuf[1024];
+	
 	sprintf(hostname, "%s", addr);
  
-	if((host=gethostbyname(hostname))==NULL) 
-	{
-		printf("[openclient]  error : Can't get serverhost info!\n");
-		return -1;
+	ret = gethostbyname_r(hostname, &hostinfo, tempbuf, sizeof(tempbuf), &phost, &h_errno);
+ 	if((0 == ret) && phost)		
+		bcopy((char*)phost->h_addr, (char*)&servaddr.sin_addr, phost->h_length);	
+	else {		
+		perror("[openclient]gethostbyname_r");		
+		return -1;	
 	}
- 
-	bcopy((char*)host->h_addr,(char*)&servaddr.sin_addr,host->h_length);
 #else
 	servaddr.sin_addr.s_addr = inet_addr(addr);
 #endif
@@ -129,14 +131,19 @@ struct connection * connectserver(){
 	struct connection * serverconn = NULL;
 	if(fd != -1){
 		serverconn = freeconnlist_getconn();
-		connection_init(serverconn, fd, CONNSOCKETSERVER);
-		connrbtree_insert(serverconn);
+		if(serverconn) {
+			connection_init(serverconn, fd, CONNSOCKETSERVER);
+			connrbtree_insert(serverconn);
+		}
+		else
+			printf("connectserver::serverconn is NULL\n");
 	}
 
 	return serverconn;
 }
 
-struct connection * createpipe(int * wfd){
+struct connection * createpipe(int * wfd) 
+{
 	int fdsig[2];
 	if(pipe2(fdsig,O_CLOEXEC) == -1){
 		fprintf(stderr,"create pipe error.%s %s %d\n", __FILE__, __FUNCTION__, __LINE__);
@@ -149,9 +156,10 @@ struct connection * createpipe(int * wfd){
 	make_socket_non_blocking(fdsig[0]);
 
 	struct connection * conn = freeconnlist_getconn();
-	connection_init(conn, fdsig[0], CONNSOCKETCMD);
-	connrbtree_insert(conn);
-
+	if(conn) {
+		connection_init(conn, fdsig[0], CONNSOCKETCMD);
+		connrbtree_insert(conn);
+	}
 	return conn;
 }
 
@@ -179,11 +187,12 @@ int sendnonblocking(int fd, void * buf, int buflen){
 			else {
 				fprintf(stdout, "errno %d error msg %s\n", errno,strerror(errno));
 				printf("fd is %d\n", fd);
-				assert(0);
+				//assert(0);
 				break;
 			}
 		} else if (n != buflen) {
-			assert(0);
+			fprintf(stdout, "Oh, no, n != buflen\n");
+			//assert(0);
 			break;
 		} else { break; }
 	}
