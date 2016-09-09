@@ -6,6 +6,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <string.h>
 
 #include "connection.h"
 #include "protocol.h"
@@ -26,6 +27,7 @@
 #include "sqlitedb.h"
 #include "zcl_ss.h"
 #include "zcl_general.h"
+#include "zcl_ha.h"
 
 //#define DEBUG_EP 1
 //#define DEBUG
@@ -38,8 +40,10 @@ void event_send_warning(struct endpoint * wd_ep, unsigned long long warning_devi
 
 void event_accept(int fd){
 	struct connection * c = freeconnlist_getconn();
-	connection_init(c, fd, CONNSOCKETCLIENT);
-	connrbtree_insert(c);
+	if(c) {
+		connection_init(c, fd, CONNSOCKETCLIENT);
+		connrbtree_insert(c);
+	}
 }
 
 
@@ -74,7 +78,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 	if(c && connection_gettype(c) == CONNSOCKETCMD) { 
 		if( _check_command(buf, buflen, CECHECK[0])){ //maybe "C" connect "B"
 			time_t t = time(NULL);
-			connlist_checkstatus(t);
+			connlist_checkstatus(hub, t);
 		}
 		if( _check_command(buf, buflen, HEARTBEAT[0])){
 			unsigned char heart_buf[255];
@@ -168,8 +172,10 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						unsigned char sbuf[512] = {0};
 						unsigned int slen = protocol_encode_set_name_feedback(sbuf, &set_device_name, result);
 
-						sendnonblocking(fd, sbuf, slen);
-						toolkit_printbytes(sbuf, slen);
+						broadcast(sbuf, slen);
+
+						//sendnonblocking(fd, sbuf, slen);
+						//toolkit_printbytes(sbuf, slen);
 					}
 					break;
 				/*case DEVICE_DEL:
@@ -205,7 +211,8 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						unsigned char sbuf[128] = {0}; 
 						unsigned int slen = protocol_encode_del_device_feedback(sbuf, &del_device, result);
 
-						sendnonblocking(fd, sbuf, slen);
+						//sendnonblocking(fd, sbuf, slen);
+						broadcast(sbuf, slen);
 					}
 					break;
 				case DEVICE_ATTR:
@@ -260,13 +267,14 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 					 break;
 				case APP_LOGIN:
 				     {
+					 	 printf("APP_LOGIN:");
 					     unsigned char sbuf[2048] = {0}; 
 					     unsigned int sbuflen = protocol_encode_login(sbuf); 
 
-					     sendnonblocking(fd, sbuf, sbuflen);
+					     int login_len = sendnonblocking(fd, sbuf, sbuflen);
+						 printf("login_len:%d\n", login_len);
 						 print_hex(sbuf, sbuflen);
-						 login_time = time(NULL);
-						 
+						 login_time = time(NULL);						 
 				     }
 					 break;
 				case DEVICE_SETARM:
@@ -441,21 +449,146 @@ void send_config_report_cmd(struct device *d)
 
 extern struct gateway gatewayinstance;
 
-#if 1
 #define seq_after(d, a, b) \
 	(((char)b - (char)a < 0) || \
 	(char)b - (char)a > 64)
-#else
 
-int seq_after(struct device *d, unsigned char a, unsigned char b) 
+#define min(a,b) a>b?b:a
+
+/*add the code that report fucking devicename*/
+
+enum dn {
+	SWITCH,
+	SOCKET,
+	CONTACT,
+	MOTION,
+	GAS,
+	FIRE,
+	KEY,
+	WARN,
+	SHADE,
+	BELL,
+	UNKNOWN
+};
+
+char utf8_table[][32] = {{0xe9, 0x94, 0xae, 0xe5, 0xbc, 0x80, 0xe5, 0x85, 0xb3, 0},
+								{0xe6, 0x8f, 0x92, 0xe5, 0xba, 0xa7, 0},
+								{0xe9, 0x97, 0xa8, 0xe7, 0xa3, 0x81, 0},
+								{0xe7, 0xba, 0xa2, 0xe5, 0xa4, 0x96, 0xe7, 0xa7, 0xbb, 0xe5, 0x8a, 0xa8, 0xe6, 0x8a, 0xa5, 0xe8, 0xad, 0xa6, 0},
+								{0xe7, 0x93, 0xa6, 0xe6, 0x96, 0xaf, 0xe4, 0xbc, 0xa0, 0xe6, 0x84, 0x9f, 0xe5, 0x99, 0xa8, 0},
+								{0xe7, 0x83, 0x9f, 0xe9, 0x9b, 0xbe, 0xe4, 0xbc, 0xa0, 0xe6, 0x84, 0x9f, 0xe5, 0x99, 0xa8, 0},
+								{0xe7, 0xb4, 0xa7, 0xe6, 0x80, 0xa5, 0xe6, 0x8c, 0x89, 0xe9, 0x92, 0xae, 0},
+								{0xe6, 0x8a, 0xa5, 0xe8, 0xad, 0xa6, 0xe5, 0x99, 0xa8, 0},
+								{0xe7, 0xaa, 0x97, 0xe5, 0xb8, 0x98, 0},
+								{0xe9, 0x97, 0xa8, 0xe9, 0x93, 0x83, 0},
+								{0xe6, 0x9c, 0xaa, 0xe5, 0x91, 0xbd, 0xe5, 0x90, 0x8d, 0}};
+
+int devicetype_valid(unsigned short devicetype)
 {
-	if(strncasecmp(6, d->manufacturername, "feibit"))
-		return (((char)b - (char)a < 0) || 	(char)b - (char)a > 64);
-	else
-		return ((char)b - (char)a < 0);
+	if(ZCL_HA_DEVICEID_IAS_ANCILLARY_CONTROL_EQUIPMENT == devicetype || 
+		ZCL_HA_DEVICEID_IAS_ZONE == devicetype || 
+		ZCL_HA_DEVICEID_IAS_WARNING_DEVICE == devicetype || 
+		ZCL_HA_DEVICEID_SHADE == devicetype) 
+		//|| ZCL_HA_DEVICEID_MAINS_POWER_OUTLET == devicetype)
+		return 1;
+	else 
+		return 0;
 }
-#endif
 
+void set_devicename(struct device *d, unsigned short devicetypeid, unsigned short zonetype, unsigned char epcnt)
+{
+	char name[MAXNAMELEN] = {0};
+	int slen = 0;
+	
+	switch(devicetypeid) {
+	#if 0
+	case ZCL_HA_DEVICEID_MAINS_POWER_OUTLET:
+		
+		printf("ZCL_HA_DEVICEID_MAINS_POWER_OUTLET:%s", d->modelidentifier);
+		if(!strncasecmp(d->modelidentifier, "Z-809", 5)) {
+			snprintf(name, sizeof(name), "%s", utf8_table[SOCKET]);
+		}
+		else if('F' == d->modelidentifier[0]) {
+			int i;
+			char *substrp[2];
+			char *out_ptr = NULL;
+			char sa[33] = {0};
+			char *str = sa;			
+			slen = strlen(d->modelidentifier);
+			memcpy(str, d->modelidentifier, min(slen, 33));
+			str[32] = 0;
+			
+			for(i = 0; i < 2; str = NULL, i++) {
+				substrp[i] = strtok_r(str, "-", &out_ptr);
+				if(NULL == substrp[i])
+					break;
+				printf("--> %s\n", substrp[i]);
+			}
+			if(!strncasecmp(substrp[1], "SKT", 3))
+				snprintf(name, sizeof(name), "%s", utf8_table[SOCKET]);
+		}
+		else
+			snprintf(name, sizeof(name), "%d%s", epcnt, utf8_table[SWITCH]);
+		
+		break;
+	#endif
+	case ZCL_HA_DEVICEID_IAS_ZONE:
+		switch(zonetype) {
+		case SS_IAS_ZONE_TYPE_CONTACT_SWITCH:
+			snprintf(name, sizeof(name), "%s", utf8_table[CONTACT]);
+			break;
+		case SS_IAS_ZONE_TYPE_MOTION_SENSOR:
+			snprintf(name, sizeof(name), "%s", utf8_table[MOTION]);
+			break;
+		case SS_IAS_ZONE_TYPE_GAS_SENSOR:
+			snprintf(name, sizeof(name), "%s", utf8_table[GAS]);
+			break;
+		case SS_IAS_ZONE_TYPE_FIRE_SENSOR:
+			snprintf(name, sizeof(name), "%s", utf8_table[FIRE]);
+			break;
+		case SS_IAS_ZONE_TYPE_KEY_FOB:
+			snprintf(name, sizeof(name), "%s", utf8_table[KEY]);
+			break;
+		}
+		break;
+	case ZCL_HA_DEVICEID_IAS_WARNING_DEVICE:
+		snprintf(name, sizeof(name), "%s", utf8_table[WARN]);
+		break;
+	case ZCL_HA_DEVICEID_SHADE:
+		snprintf(name, sizeof(name), "%s", utf8_table[SHADE]);
+		break;
+	case ZCL_HA_DEVICEID_IAS_ANCILLARY_CONTROL_EQUIPMENT:
+		snprintf(name, sizeof(name), "%s", utf8_table[BELL]);
+		break;
+	default:
+		snprintf(name, sizeof(name), "%s", utf8_table[UNKNOWN]);
+	}
+	slen = strlen(name); 
+	memcpy(d->devicename, name, min(slen, MAXNAMELEN-1));
+	//toolkit_printbytes((unsigned char *)d->devicename, slen);
+	d->devicename[MAXNAMELEN-1] = 0;
+	sqlitedb_update_devicename(d->ieeeaddr, d->devicename);
+}
+
+void init_devicename(struct device *d)
+{
+	//printf("init_devicename\n");
+	struct list_head *pos, *n;
+	struct endpoint *ep;
+	if(0 == strlen(d->devicename)) {
+		list_for_each_safe(pos, n,&d->eplisthead) {
+			ep = list_entry(pos, struct endpoint, list);
+			if(devicetype_valid(ep->simpledesc.simpledesc.DeviceID)) {
+				printf("devicetype is valid\n");
+				if(ZCL_HA_DEVICEID_IAS_ZONE == ep->simpledesc.simpledesc.DeviceID && 
+						0 == ep->simpledesc.zonetype)
+					break;
+				set_devicename(d, ep->simpledesc.simpledesc.DeviceID,
+					ep->simpledesc.zonetype, d->activeep.ActiveEPCount);
+			}
+		}
+	}
+}
 
 void event_recvznp(struct eventhub * hub, int fd){ 
 	unsigned char buf[128] = {0};
@@ -470,9 +603,16 @@ void event_recvznp(struct eventhub * hub, int fd){
 				readnonblocking(fd, &req, sizeof(struct zclzoneenrollreq));
 				fprintf(stdout, "********event recv znp enroll ieee %llX \n", req.ieeeaddr);
 				struct device * d = gateway_getdevice(getgateway(), req.ieeeaddr);
-				if(!d  || d->status & DEVICE_APP_DEL){
+				if(!d  || d->status & DEVICE_APP_DEL) {
 					return;
 				}
+
+				//add the devicename field
+				if(0 == strlen(d->devicename)) {
+					init_devicename(d);
+					sqlitedb_update_devicename(d->ieeeaddr, d->devicename);
+				}	
+				
 				buflen = protocol_encode_add_del_device(buf, req.ieeeaddr, 1);
 				broadcast(buf, buflen);
 				

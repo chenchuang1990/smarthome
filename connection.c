@@ -4,15 +4,18 @@
 #include <unistd.h>
 #include "connection.h"
 #include "ceconf.h"
+#include "eventhub.h"
 
 #define MAXBUFLEN 1024
 
 struct connection * connection_create(){
 	struct connection * conn = (struct connection*) malloc(sizeof(struct connection));
-	memset(conn, 0, sizeof(struct connection));
-	conn->rawfifo = kfifo_init(1024);
-	INIT_LIST_HEAD(&conn->list);
-	conn->timestamp = time(NULL);
+	if(conn) {
+		memset(conn, 0, sizeof(struct connection));
+		conn->rawfifo = kfifo_init(1024);
+		INIT_LIST_HEAD(&conn->list);
+		conn->timestamp = time(NULL);
+	}
 
 	return conn;
 }
@@ -102,12 +105,13 @@ int connlist_check(unsigned char conntype){
 	return 0;
 }
 
-void connlist_checkstatus(long timestamp){
+void connlist_checkstatus(struct eventhub * hub, long timestamp){
 	struct list_head * pos, *n;
 	list_for_each_safe(pos, n, &connlisthead){
 		struct connection * c = list_entry(pos, struct connection, list);
 		if((c->type == CONNSOCKETSERVER || c->type == CONNSOCKETCLIENT) && 
 				timestamp - c->timestamp > ceconf_gettimeout()){
+			eventhub_deregister(hub, c->fd);
 			connection_close(c);
 		}
 	}

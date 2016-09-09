@@ -13,6 +13,9 @@
 #include "sqlitedb.h"
 #include "zcl_down_cmd.h"
 #include "zcl_datatype.h"
+#include "zcl_ha.h"
+#include "toolkit.h"
+
 
 #define SEC_KEY_LEN 16 // ???
 void *zcl_mem_alloc( uint16 size ){
@@ -310,7 +313,7 @@ ZStatus_t zcl_SendCommand( uint8 srcEP, afAddrType_t *destAddr,
                            uint16 clusterID, uint8 cmd, uint8 specific, uint8 direction,
                            uint8 disableDefaultRsp, uint16 manuCode, uint8 seqNum,
                            uint16 cmdFormatLen, uint8 *cmdFormat ){
-
+                           
 	return zcl_sendcommand(srcEP, destAddr->endPoint, destAddr->addr.shortAddr,clusterID, cmd, specific, direction, disableDefaultRsp, manuCode, seqNum, cmdFormatLen, cmdFormat);
 }
 
@@ -872,6 +875,69 @@ unsigned char * zcl_parsehdr(struct zclframehdr * framehdr,unsigned char * data)
 	return data;
 }
 
+
+/*add the code that report fucking devicename*/
+
+#define min(a,b) a>b?b:a
+
+enum dn {
+	SWITCH,
+	SOCKET,
+	CONTACT,
+	MOTION,
+	GAS,
+	FIRE,
+	KEY,
+	WARN,
+	SHADE,
+	BELL,
+	UNKNOWN
+};
+
+extern char utf8_table[][32];
+
+void handle_outlet_devicename(struct device *d)
+{
+	struct endpoint *ep;
+	char name[MAXNAMELEN] = {0};
+	int slen = 0;
+
+	ep = list_entry(d->eplisthead.next, struct endpoint, list); 
+	if(ep && (ZCL_HA_DEVICEID_MAINS_POWER_OUTLET == ep->simpledesc.simpledesc.DeviceID)) {
+		if(!strncasecmp(d->modelidentifier, "Z809", 4)) {
+			snprintf(name, sizeof(name), "%s", utf8_table[SOCKET]);
+		}
+		else if('F' == d->modelidentifier[0]) {
+			int i;
+			char *substrp[2];
+			char *out_ptr = NULL;
+			char sa[33] = {0};
+			char *str = sa;			
+			slen = strlen(d->modelidentifier);
+			memcpy(str, d->modelidentifier, min(slen, 33));
+			str[32] = 0;
+			
+			for(i = 0; i < 2; str = NULL, i++) {
+				substrp[i] = strtok_r(str, "-", &out_ptr);
+				if(NULL == substrp[i])
+					break;
+				printf("--> %s\n", substrp[i]);
+			}
+			if(!strncasecmp(substrp[1], "SKT", 3))
+				snprintf(name, sizeof(name), "%s", utf8_table[SOCKET]);
+		}
+		else
+			snprintf(name, sizeof(name), "%d%s", d->activeep.ActiveEPCount, utf8_table[SWITCH]);
+		
+		
+		slen = strlen(name); 
+		memcpy(d->devicename, name, min(slen, MAXNAMELEN-1));
+		//toolkit_printbytes((unsigned char *)d->devicename, slen);
+		d->devicename[MAXNAMELEN-1] = 0;
+		sqlitedb_update_devicename(d->ieeeaddr, d->devicename);
+	}
+}
+
 int zcl_proccessincomingmessage(IncomingMsgFormat_t * message){ 
 	int result = -1;
 	if(message->Len == 0){
@@ -918,10 +984,9 @@ int zcl_proccessincomingmessage(IncomingMsgFormat_t * message){
 			break;
 		case ZCL_CLUSTER_ID_GEN_BASIC:
 			zcl_handle_basic(zclmessage.data,zclmessage.datalen, d);
-			printf("zcl version:%d\n", d->zclversion);
-			printf("applicationversion:%d\n", d->applicationversion);
-			printf("stackversion:%d\n", d->stackversion);
-			printf("hwversion:%d\n", d->hwversion);
+			if(0 == strlen(d->devicename)) {
+				handle_outlet_devicename(d);
+			}
 			sqlitedb_update_device_attr(d);
 			//printf("receive basic req response\n");
 			//printf("data[0]:%02x, data[1]:%02x\n", zclmessage.data[0], zclmessage.data[1]);

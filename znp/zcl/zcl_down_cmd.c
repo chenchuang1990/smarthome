@@ -63,11 +63,11 @@ void zcl_down_cmd_onoff(struct protocol_cmdtype_onoff_ieee * onoff){
 		if(onoff->onoff){
 			//zclGeneral_SendOnOff_CmdOn(APP_DEVICETYPEID_SS_ENDPOINT, &addrtype,0,0);
 			//zclGeneral_SendOnOff_CmdOn(APP_DEVICETYPEID_SS_ENDPOINT, &addrtype,0,get_sequence());
-			zclGeneral_SendOnOff_CmdOn(APP_DEVICETYPEID_SS_ENDPOINT, &addrtype,0,onoff->serialnum);
+			zclGeneral_SendOnOff_CmdOn(APP_DEVICETYPEID_SS_ENDPOINT, &addrtype,0,(unsigned char)onoff->serialnum);
 		}else{
 			//zclGeneral_SendOnOff_CmdOff(APP_DEVICETYPEID_SS_ENDPOINT, &addrtype,0,0);
 			//zclGeneral_SendOnOff_CmdOff(APP_DEVICETYPEID_SS_ENDPOINT, &addrtype,0,get_sequence());
-			zclGeneral_SendOnOff_CmdOff(APP_DEVICETYPEID_SS_ENDPOINT, &addrtype,0,onoff->serialnum);
+			zclGeneral_SendOnOff_CmdOff(APP_DEVICETYPEID_SS_ENDPOINT, &addrtype,0,(unsigned char)onoff->serialnum);
 		}
 
 	}
@@ -137,7 +137,7 @@ void zcl_down_cmd_config_reporting(struct protocol_cmdtype_config_reporting* con
 {
 	int i;
 	zclCfgReportCmd_t CfgReportCmd;
-	unsigned short temp;
+	//unsigned short temp;
 
 	printf("zcl_down_cmd_config_reporting\n");
 	printf("ieee:0x%016llx\n",config_reporting->ieee);
