@@ -57,10 +57,11 @@ unsigned long long load_sequence(char *path)
 		perror("read");
 		return 0;
 	}
-	else if(size == PAGESIZE)
+	else if(size == PAGESIZE) {
+		buf[PAGESIZE - 1] = 0;
 		printf("warning:read size maybe overflow\n");
+	}
 	
-	buf[size] = 0;
 
 	ret = xlate_seqstr2seqnum(buf);
 	
