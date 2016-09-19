@@ -62,7 +62,6 @@ unsigned long long load_sequence(char *path)
 		printf("warning:read size maybe overflow\n");
 	}
 	
-
 	ret = xlate_seqstr2seqnum(buf);
 	
 	return ret;

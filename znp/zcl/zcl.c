@@ -977,7 +977,9 @@ int zcl_proccessincomingmessage(IncomingMsgFormat_t * message){
 		device_set_status(d, DEVICE_SEND_ATTR);
 	}
 	#endif
-	
+
+	d->timestamp = time(NULL);
+		
 	switch(zclmessage.message->ClusterId) { 
 		case ZCL_CLUSTER_ID_SS_IAS_ZONE: 
 			result = zclss_handleincoming(&zclmessage);
@@ -998,7 +1000,8 @@ int zcl_proccessincomingmessage(IncomingMsgFormat_t * message){
 			handle_onoff_state(&zclmessage);
 			break;
 		case ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL:
-			handle_levelctr_rsp(&zclmessage);
+			handle_levelctl_state(&zclmessage);
+			//handle_levelctr_rsp(&zclmessage);
 			break;
 		case ZCL_CLUSTER_ID_SS_IAS_WD:
 			//handle_warning_rsp(&zclmessage);

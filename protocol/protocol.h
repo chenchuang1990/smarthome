@@ -21,6 +21,7 @@
 #define CONFIG_REPORT	  0x8014
 #define DEVICE_STATUS	  0x8015
 #define READ_ONOFF_CMD	  0x8016
+#define READ_ALARM_STAUS  0x801f
 
 
 #define LOGIN 0x0001
@@ -38,6 +39,9 @@
 #define STATUS_REPORT	0x0015
 //#define ONOFF_REPORT	0x0016
 #define READ_ONOFF_RSP	0x0016
+#define READ_LEVEL_RSP	0x0018
+#define READ_ALARM_RSP  0x001f
+
 
 
 

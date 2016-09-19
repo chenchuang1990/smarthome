@@ -16,19 +16,33 @@
 //校验码 (从开头到校验位前一位的^)
 //标识位 1 byte
 //-------
-unsigned long long protocol_parse_arm(unsigned char * buf, unsigned short len, struct protocol_cmdtype_arm * arm, unsigned int * serialnum, unsigned char * endpoint ){
+unsigned int protocol_parse_arm(unsigned char * buf, unsigned short len, struct protocol_cmdtype_setarm * setarm)
+{
 	const unsigned char * p = buf;
 	bytebuffer_skipbytes(&p, 5);
-	bytebuffer_readdword(&p, serialnum);
-	unsigned long long ieee;
-	bytebuffer_readquadword(&p, &ieee);
-	bytebuffer_readbyte(&p, endpoint);
+	bytebuffer_readdword(&p, &setarm->serialnum);
+	//unsigned long long ieee;
+	bytebuffer_readquadword(&p, &setarm->ieee);
+	bytebuffer_readbyte(&p, &setarm->endpoint);
 	//bytebuffer_readdword(&p, serialnum);
-	bytebuffer_readbyte(&p, &arm->armmodel);
-	bytebuffer_readbyte(&p, &arm->starthour);
-	bytebuffer_readbyte(&p, &arm->startminute);
-	bytebuffer_readbyte(&p, &arm->endhour);
-	bytebuffer_readbyte(&p, &arm->endminute); 
+	bytebuffer_readbyte(&p, &setarm->arm.armmodel);
+	bytebuffer_readbyte(&p, &setarm->arm.starthour);
+	bytebuffer_readbyte(&p, &setarm->arm.startminute);
+	bytebuffer_readbyte(&p, &setarm->arm.endhour);
+	bytebuffer_readbyte(&p, &setarm->arm.endminute); 
 
-	return ieee;
+	return 0;
 }
+
+unsigned int protocol_parse_get_alarm_cmd(unsigned char * buf, unsigned short len, struct protocol_cmdtype_setarm * setarm)
+{
+	const unsigned char * p = buf;
+	bytebuffer_skipbytes(&p, 5);
+	bytebuffer_readdword(&p, &setarm->serialnum);
+	//unsigned long long ieee;
+	bytebuffer_readquadword(&p, &setarm->ieee);
+	bytebuffer_readbyte(&p, &setarm->endpoint);
+
+	return 0;
+}
+

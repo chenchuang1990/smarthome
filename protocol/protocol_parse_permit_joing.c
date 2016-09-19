@@ -201,6 +201,7 @@ void protocol_parse_get_onoff_state(unsigned char *buf, unsigned short len, stru
 	bytebuffer_readbyte(&p, &onoff_state->endpoint);
 }
 
+
 void protocol_parse_login_feedback(unsigned char *buf, unsigned short len, struct protocol_datatype_login_feedback *feedback)
 {
 	const unsigned char * p = buf;
