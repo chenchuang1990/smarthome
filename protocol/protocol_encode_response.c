@@ -91,6 +91,26 @@ unsigned int protocol_encode_level_response(unsigned char *buf, struct zcllevlct
 	return p-buf;
 }
 
+unsigned int protocol_encode_readlevel_response(unsigned char *buf, struct zclreadlevelctlrsp * response) 
+{
+	unsigned char *p = buf;
+	bytebuffer_writebyte(&p,PROTOCOL_START_FLAG);
+	bytebuffer_writeword(&p,0);
+	bytebuffer_writeword(&p,READ_LEVEL_RSP);
+	bytebuffer_writedword(&p, response->serialnum);
+	bytebuffer_writequadword(&p,response->ieeeaddr);
+	bytebuffer_writebyte(&p, response->endpoint);
+	bytebuffer_writebyte(&p,response->cur_level);
+	
+	unsigned char * len = buf + 1;
+	bytebuffer_writeword(&len, p - buf + 2);
+	unsigned char checksum = protocol_checksum(buf,p-buf);
+	bytebuffer_writebyte(&p,checksum);
+	bytebuffer_writebyte(&p,PROTOCOL_END_FLAG);
+
+	return p-buf;
+}
+
 unsigned int protocol_encode_warning_response(unsigned char *buf, struct zclgeneraldefaultresponse *response) 
 {
 	unsigned char *p = buf;

@@ -434,9 +434,13 @@ int zcl_pross_onoff_response(struct zclincomingmsg *msg)
 	cmd.req.status= msg->data[1];
 	struct device * d = gateway_getdevice_shortaddr(msg->message->SrcAddr);
 	if(d){
-		cmd.req.ieeeaddr = d->ieeeaddr;
-		cmd.req.clusterid = msg->message->ClusterId;
-		cmd.req.endpoint = msg->message->SrcEndpoint;
+		struct endpoint *ep = gateway_get_endpoint(d->ieeeaddr, msg->message->SrcEndpoint);
+		if(ep) {
+			cmd.req.ieeeaddr = d->ieeeaddr;
+			cmd.req.clusterid = msg->message->ClusterId;
+			cmd.req.endpoint = msg->message->SrcEndpoint;
+			ep->simpledesc.device_state = cmd.req.cmd_ind;
+		}
 	}
 	cmd.req.serialnum = msg->zclframehdr.transseqnum;
 
@@ -452,19 +456,21 @@ int zcl_pross_read_onoff_rsp(struct zclincomingmsg *msg)
 	cmd.cmdid = ZCLREADONOFFRSP;	
 	cmd.req.state = msg->data[4];
 	
-	
 	struct device * d = gateway_getdevice_shortaddr(msg->message->SrcAddr);
 	if(d){
 		cmd.req.ieeeaddr = d->ieeeaddr;
-		cmd.req.endpoint = msg->message->SrcEndpoint;
+		cmd.req.endpoint = msg->message->SrcEndpoint;		
 	}
 	cmd.req.serialnum = msg->zclframehdr.transseqnum;
 	
-	write(g_znpwfd, &cmd, sizeof(struct zcl_read_onoff_rsp_cmd));
+	struct endpoint *ep = gateway_get_endpoint(d->ieeeaddr, msg->message->SrcEndpoint);
+	if(ep && (ep->simpledesc.device_state != cmd.req.state)) {
+		write(g_znpwfd, &cmd, sizeof(struct zcl_read_onoff_rsp_cmd));
+		ep->simpledesc.device_state = cmd.req.state;
+	}
 	
 	return 0;
 }
-
 
 int zcl_pross_default_response(struct zclincomingmsg *msg)
 {
@@ -602,6 +608,7 @@ int handle_onoff_state(struct zclincomingmsg *zclin)
 {
 	switch(zclin->zclframehdr.commandid) {
 	case ZCL_CMD_READ_RSP:
+		printf("handle_onoff_state:ZCL_CMD_READ_RSP\n");
 		zcl_pross_read_onoff_rsp(zclin);
 			break;
 	case ZCL_CMD_DEFAULT_RSP:
@@ -613,7 +620,30 @@ int handle_onoff_state(struct zclincomingmsg *zclin)
 	return -1;
 }
 
-int handle_levelctr_rsp(struct zclincomingmsg *zclin)
+int zcl_pross_read_levelctl_rsp(struct zclincomingmsg *msg)
+{
+	struct zcl_read_levelctl_rsp_cmd cmd;
+	
+	cmd.cmdid = ZCLREADLEVELCTLRSP;	
+	cmd.req.cur_level = msg->data[4];
+	
+	
+	struct device * d = gateway_getdevice_shortaddr(msg->message->SrcAddr);
+	if(d){
+		cmd.req.ieeeaddr = d->ieeeaddr;
+		cmd.req.endpoint = msg->message->SrcEndpoint;
+	}
+	cmd.req.serialnum = msg->zclframehdr.transseqnum;
+
+	struct endpoint *ep = gateway_get_endpoint(d->ieeeaddr, msg->message->SrcEndpoint);
+	if(ep && (ep->simpledesc.device_state != cmd.req.cur_level)) {
+		write(g_znpwfd, &cmd, sizeof(struct zcl_read_levelctl_rsp_cmd));
+		ep->simpledesc.device_state = cmd.req.cur_level;
+	}
+	return 0;
+}
+
+int zcl_pross_levelctl_response(struct zclincomingmsg *zclin)
 {
 	struct zcl_levlctl_default_response_cmd cmd;
 	cmd.cmdid = ZCLGENLEVELCTLRSP;
@@ -631,6 +661,23 @@ int handle_levelctr_rsp(struct zclincomingmsg *zclin)
 
 	return 0;
 }
+
+int handle_levelctl_state(struct zclincomingmsg *zclin)
+{
+	switch(zclin->zclframehdr.commandid) {
+	case ZCL_CMD_READ_RSP:
+		printf("handle_levelctl_state:ZCL_CMD_READ_RSP\n");
+		zcl_pross_read_levelctl_rsp(zclin);
+			break;
+	case ZCL_CMD_DEFAULT_RSP:
+		zcl_pross_levelctl_response(zclin);
+		break;
+	return 0;
+	}
+	
+	return -1;
+}
+
 
 int handle_warning_rsp(struct zclincomingmsg *zclin)
 {

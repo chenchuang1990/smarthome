@@ -20,6 +20,7 @@
 #include "zcl_general.h"
 #include "Zcl_down_cmd.h"
 #include "zcl_datatype.h"
+#include "zcl_ha.h"
 #include "ceconf.h"
 
 
@@ -296,7 +297,7 @@ void network_test_start(void)
 	pthread_create(&tid, NULL, network_test_task, NULL);
 }
 
-#if 0
+//#if 0
 
 volatile int access_period = 15 * 60;
 //volatile int access_period = 10;
@@ -314,6 +315,16 @@ int get_onoff_period(void)
 
 extern uint8_t initDone;
 
+#define TIMESTAMPOUT 10
+
+int check_device_timeout(struct device *d)
+{
+	time_t cur_time = time(NULL);
+	if(cur_time - d->timestamp > TIMESTAMPOUT)
+		return 1;
+	else 
+		return 0;
+}
 
 void *send_read_onoff(void *args)
 {
@@ -322,21 +333,30 @@ void *send_read_onoff(void *args)
 	struct device *d;
 	struct endpoint *ep;
 	//int interval, 
-	int i;
+	//int i;
 	zclReadCmd_t readcmd; 
-	zclReadReportCfgCmd_t *read_report;
+	//zclReadReportCfgCmd_t *read_report;
 	
-	readcmd.numAttr = 4;
-	readcmd.attrID[0] = ATTRID_BASIC_ZCL_VERSION;
-	readcmd.attrID[1] = 0x0001;
-	readcmd.attrID[2] = 0x0010;
-	readcmd.attrID[3] = 0x0011;
+	readcmd.numAttr = 1;
+	readcmd.attrID[0] = 0;
+	//readcmd.attrID[1] = 0x0001;
+	//readcmd.attrID[2] = 0x0010;
+	//readcmd.attrID[3] = 0x0011;
 
+#if 0
 	//test:
 	read_report = malloc(sizeof(zclReadReportCfgCmd_t) + sizeof(zclReadReportCfgRec_t));
 	read_report->numAttr = 1;
 	read_report->attrList[0].direction = 0;
 	read_report->attrList[0].attrID = 0x0000;
+#endif
+	/*init the timestemp of all active device*/
+	list_for_each_safe(pos, n, &gw->head) { 
+		d = list_entry(pos, struct device, list); 
+		if((!device_check_status(d, DEVICE_APP_DEL)) && (!device_check_status(d, DEVICE_LEAVE_NET))) {
+			d->timestamp = time(NULL);
+		}
+	}
 
 	while(1) {
 		if(initDone) {
@@ -344,38 +364,57 @@ void *send_read_onoff(void *args)
 			list_for_each_safe(pos, n, &gw->head) { 
 				d = list_entry(pos, struct device, list); 
 				if(d && (!device_check_status(d, DEVICE_APP_DEL)) && (!device_check_status(d, DEVICE_LEAVE_NET))) {
+					printf("send read cmd ieee:%llx\n", d->ieeeaddr);
+					
+					//d->timestamp = time(NULL);
 					list_for_each_safe(ep_pos, ep_n, &d->eplisthead) {
 						ep = list_entry(ep_pos, struct endpoint, list);
+						if(ep) {							
+							if((ep->simpledesc.simpledesc.DeviceID != ZCL_HA_DEVICEID_MAINS_POWER_OUTLET) && 
+								(ep->simpledesc.simpledesc.DeviceID != ZCL_HA_DEVICEID_SHADE))
+								continue;
+							printf("send read cmd endpoint:%d\n", ep->simpledesc.simpledesc.Endpoint);
+							if(check_device_timeout(d)) {
+								printf("send_read_onoff:DEVICE_LEAVE_NET\n");
+								device_set_status(d, DEVICE_LEAVE_NET);
+								continue;
+							}
+							unsigned short cluster_id = (ep->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_MAINS_POWER_OUTLET ? ZCL_CLUSTER_ID_GEN_ON_OFF : ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL);
+							zcl_SendRead(1, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, cluster_id, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC,0,get_sequence());
+						#if 0
+							if(ep->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_MAINS_POWER_OUTLET) {
+								zcl_SendRead(1, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, ZCL_CLUSTER_ID_GEN_ON_OFF, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC,0,get_sequence());
+							}								
+							else if(ep->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_SHADE) {
+								zcl_SendRead(1, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC,0,get_sequence());
+							}
+						#endif
+						}
+						#if 0
 						for(i = 0; i < ep->simpledesc.simpledesc.NumInClusters; i++) {
 							if(ZCL_CLUSTER_ID_GEN_ON_OFF == ep->simpledesc.simpledesc.InClusterList[i]) {
-								//zcl_SendRead(1, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, ZCL_CLUSTER_ID_GEN_ON_OFF, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC,0,get_sequence());
+								zcl_SendRead(1, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, ZCL_CLUSTER_ID_GEN_ON_OFF, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC,0,0);
 								//zcl_SendRead(2, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC,0,get_sequence());
-								zcl_SendReadReportCfgCmd(2, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, ZCL_CLUSTER_ID_GEN_ON_OFF, read_report, ZCL_CLUSTER_ID_GEN_BASIC, 0, get_sequence());
+								//zcl_SendReadReportCfgCmd(2, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, ZCL_CLUSTER_ID_GEN_ON_OFF, read_report, ZCL_CLUSTER_ID_GEN_BASIC, 0, get_sequence());
 								printf("[send_read_onoff]ieee:%llx\n", d->ieeeaddr);
 								//sleep(2);
-								sleep(5);
+								//sleep(5);
 								break;
 							}
 						}
+						#endif
 					}					
 					//sleep(interval);
 				}
 			}
+			sleep(3);
 		}
 	}
-	free(read_report);
-}
-
-int check_device_timeout(struct device *d)
-{
-	time_t cur_time = time(NULL);
-	if(cur_time - d->timestamp > 3 * access_period)
-		return 1;
-	else 
-		return 0;
+	//free(read_report);
 }
 
 
+#if 0
 void *send_basic_request(void *args)
 {
 	struct gateway *gw = getgateway();
@@ -429,12 +468,12 @@ void *send_basic_request(void *args)
 	}
 	return NULL;
 }
-
+#endif
 void send_period_request(void)
 {
-	pthread_t basic_tid;
-	//pthread_t onoff_tid;
-	//pthread_create(&onoff_tid, NULL, send_read_onoff, NULL);
-	pthread_create(&basic_tid, NULL, send_basic_request, NULL);
+	//pthread_t basic_tid;
+	pthread_t onoff_tid;
+	pthread_create(&onoff_tid, NULL, send_read_onoff, NULL);
+	//pthread_create(&basic_tid, NULL, send_basic_request, NULL);
 }
-#endif
+//#endif

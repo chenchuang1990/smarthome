@@ -236,10 +236,13 @@ int32_t rpcWaitMqClientMsg(uint32_t timeout)
 		dbg_print(PRINT_LEVEL_INFO, "rpcWaitMqClientMsg: processing MT[%d]\n",
 		        rpcLen);
 		// process incoming message
-		/*printf("process incoming message\n");
+		#if 0
+		int i;
+		printf("=====process incoming message======\n");
 		for(i = 0; i < rpcLen; i++)
 			printf("%02x ", rpcFrame[i]);
-		printf("\n");*/
+		printf("\n");
+		#endif
 		mtProcess(rpcFrame, rpcLen);		
 	}
 	else

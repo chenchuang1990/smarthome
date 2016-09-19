@@ -27,6 +27,13 @@ struct protocol_cmdtype_arm{
 	unsigned char endminute; 
 };
 
+struct protocol_cmdtype_setarm {
+		unsigned int serialnum;
+		unsigned long long ieee;	
+		unsigned char endpoint;
+		struct protocol_cmdtype_arm arm;
+};
+
 struct __attribute__((packed))protocol_cmdtype_identify{ 
 	unsigned char endpoint;
 	unsigned int serialnum;
@@ -158,5 +165,17 @@ struct __attribute__((packed))protocol_cmdtype_get_onoff_state_cmd{
 	int cmdid;
 	struct protocol_cmdtype_get_onoff_state onoff_state;
 };
+
+struct __attribute__((packed))protocol_cmdtype_get_alarm_state {
+	unsigned long long ieee;
+	unsigned int serialnum;
+	unsigned char endpoint;
+};
+
+struct __attribute__((packed))protocol_cmdtype_get_alarm_state_cmd{
+	int cmdid;
+	struct protocol_cmdtype_get_alarm_state alarm_state;
+};
+
 
 #endif

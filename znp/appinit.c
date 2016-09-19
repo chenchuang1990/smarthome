@@ -1073,6 +1073,8 @@ static uint8_t mtZdoEndDeviceAnnceIndCb(EndDeviceAnnceIndFormat_t *msg)
 	d->status &= ~DEVICE_LEAVE_NET;
 	sqlitedb_update_device_status(d);
 
+	d->timestamp = time(NULL);
+	
 	if(d->shortaddr != msg->NwkAddr) { 
 		sqlitedb_update_device_shortaddr(msg->IEEEAddr, msg->NwkAddr);
 		d->shortaddr = msg->NwkAddr;
@@ -1368,12 +1370,12 @@ static uint8_t mtAfIncomingMsgCb(IncomingMsgFormat_t *msg)
 	}
 	consolePrint("\n");
 //#endif	
-	struct device * d = gateway_getdevice_shortaddr(msg->SrcAddr);
-	if(d){ 
+	//struct device * d = gateway_getdevice_shortaddr(msg->SrcAddr);
+	//if(d){ 
 		//d->status |= DEVICE_ACTIVE;
-		zcl_proccessincomingmessage(msg);
+	zcl_proccessincomingmessage(msg);
 		//d->timestamp = time(NULL);
-	}
+	//}
 
 	return 0;
 }

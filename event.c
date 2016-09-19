@@ -280,19 +280,20 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 				case DEVICE_SETARM:
 				     {
 					 	printf("DEVICE_SETARM\n");
-					     struct protocol_cmdtype_arm arm;
+					     struct protocol_cmdtype_setarm setarm;
 						 unsigned char result;
-					     unsigned int serialnum = 0;
-					     unsigned char endpoint = 0;
-					     unsigned long long ieee = protocol_parse_arm(buffer, messagelen, &arm, &serialnum, &endpoint);
+					     //unsigned int serialnum = 0;
+					     //unsigned char endpoint = 0;
+					     //unsigned long long ieee = protocol_parse_arm(buffer, messagelen, &arm);
+					     protocol_parse_arm(buffer, messagelen, &setarm);
 						 
-						 if(arm.starthour < 24 && arm.startminute < 60 && arm.endhour < 24 && arm.endminute < 60) {
-						     result = (unsigned char)sqlitedb_update_device_arm(ieee, endpoint, &arm);
+						 if(setarm.arm.starthour < 24 && setarm.arm.startminute < 60 && setarm.arm.endhour < 24 && setarm.arm.endminute < 60) {
+						     result = (unsigned char)sqlitedb_update_device_arm(setarm.ieee, setarm.endpoint, &setarm.arm);
 						     //result = (result == 0)?1:0;
 						     if(result == 0){ 
-							     struct endpoint * ep = gateway_get_endpoint(ieee, endpoint);
+							     struct endpoint * ep = gateway_get_endpoint(setarm.ieee, setarm.endpoint);
 								 if(ep) {
-							     	memcpy(&ep->simpledesc.arm, &arm, sizeof(struct protocol_cmdtype_arm));
+							     	memcpy(&ep->simpledesc.arm, &setarm.arm, sizeof(struct protocol_cmdtype_arm));
 								 }
 								 else {
 								 	result = 1;
@@ -303,9 +304,10 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						 	result = 1;
 						 
 					     unsigned char sbuf[128] = {0};
-					     unsigned int sbuflen = protocol_encode_arm_feedback(sbuf, serialnum, ieee, result);
-					     sendnonblocking(fd, sbuf, sbuflen);						 
-						 toolkit_printbytes(sbuf, sbuflen);
+					     unsigned int sbuflen = protocol_encode_arm_feedback(sbuf, &setarm, result);
+					     //sendnonblocking(fd, sbuf, sbuflen);						 
+						 //toolkit_printbytes(sbuf, sbuflen);
+						 broadcast(sbuf, sbuflen);
 				     }
 					 break;
 				case DEVICE_ONOFF:
@@ -349,6 +351,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 					     sendnonblocking(g_main_to_znp_write_fd, &permit_joining_ieee_cmd, sizeof(struct protocol_cmdtype_permit_joining_cmd));
 				     }
 					 break;
+			#if 0
 				case CONFIG_REPORT:
 					{
 						printf("PROTOCOL_CONFIG_REPORT\n");
@@ -363,7 +366,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						sendnonblocking(g_main_to_znp_write_fd, &cfg_rpt_cmd, sizeof(struct protocol_cmdtype_config_reporting_cmd));
 					}
 					break;
-				#if 0
+				
 				case DEVICE_STATUS:
 					{
 					     //struct protocol_cmdtype_get_device_status_cmd get_status_cmd;
@@ -407,6 +410,26 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						sendnonblocking(g_main_to_znp_write_fd, &onoff_state_cmd, sizeof(struct protocol_cmdtype_get_onoff_state_cmd));
 					}
 					break;
+				case READ_ALARM_STAUS:
+					{
+					     unsigned char result;
+					     struct protocol_cmdtype_setarm armset;
+						 memset(&armset, 0, sizeof(armset));
+					     protocol_parse_get_alarm_cmd(buffer, messagelen, &armset); 
+						 
+						 struct endpoint * ep = gateway_get_endpoint(armset.ieee, armset.endpoint);
+						 if(ep) {
+					     	memcpy(&armset.arm, &ep->simpledesc.arm, sizeof(struct protocol_cmdtype_arm));
+							result = 0;
+						 }
+						 else {
+						 	result = 1;
+						 }	
+					     unsigned char sbuf[512] = {0};
+					     unsigned int slen = protocol_encode_arm_feedback(sbuf, &armset, result);
+					     broadcast(sbuf, slen); 
+				     }
+				     break;
 				case ILLEGAL:
 					break;
 			}
@@ -727,6 +750,7 @@ void event_recvznp(struct eventhub * hub, int fd){
 				readnonblocking(fd, &readonoff_rsp, sizeof(readonoff_rsp));
 				
 				buflen = protocol_encode_readonoff_response(buf, &readonoff_rsp);
+				sqlitedb_update_device_state(readonoff_rsp.ieeeaddr, readonoff_rsp.endpoint, readonoff_rsp.state);
 				broadcast(buf, buflen);				
 			}	
 			break;
@@ -745,6 +769,16 @@ void event_recvznp(struct eventhub * hub, int fd){
 					broadcast(buf, buflen);
 				}
 			}
+			break;
+		case ZCLREADLEVELCTLRSP:
+			{
+				struct zclreadlevelctlrsp readlevel_rsp;
+				readnonblocking(fd, &readlevel_rsp, sizeof(readlevel_rsp));
+				
+				buflen = protocol_encode_readlevel_response(buf, &readlevel_rsp);
+				sqlitedb_update_device_state(readlevel_rsp.ieeeaddr, readlevel_rsp.endpoint, readlevel_rsp.cur_level);
+				broadcast(buf, buflen);				
+			}	
 			break;
 		case ZCLWARNINGRSP:
 			{

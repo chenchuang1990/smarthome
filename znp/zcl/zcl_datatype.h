@@ -12,6 +12,7 @@
 #define ZCLGENONOFFRSP				0x00000010
 #define ZCLGENLEVELCTLRSP			0x00000011
 #define ZCLREADONOFFRSP				0x00000016
+#define ZCLREADLEVELCTLRSP			0x00000018
 #define ZCLWARNINGRSP				0x00000502
 
 struct __attribute__((packed))zclzoneenrollreq{
@@ -154,6 +155,19 @@ struct __attribute__((packed))zcl_read_onoff_rsp_cmd {
 	unsigned int cmdid;
 	struct zclreadonoffrsp req;
 };
+
+struct __attribute__((packed))zclreadlevelctlrsp {
+	unsigned long long ieeeaddr;
+	unsigned int serialnum;
+	unsigned char endpoint;
+	unsigned char cur_level;
+};
+
+struct __attribute__((packed))zcl_read_levelctl_rsp_cmd {
+	unsigned int cmdid;
+	struct zclreadlevelctlrsp req;
+};
+
 
 
 #endif

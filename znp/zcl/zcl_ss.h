@@ -279,7 +279,8 @@ int zclss_send_ias_wd_start_warning_cmd(unsigned char srcep, unsigned char dstep
 int zclss_handle_default( struct zclincomingmsg * zclincomingmsg);
 int report_basic_status(struct zclincomingmsg *zclin);
 int handle_onoff_state(struct zclincomingmsg *zclin);
-int handle_levelctr_rsp(struct zclincomingmsg *zclin);
+int handle_levelctl_state(struct zclincomingmsg *zclin);
+//int handle_levelctr_rsp(struct zclincomingmsg *zclin);
 int handle_warning_rsp(struct zclincomingmsg *zclin);
 
 #endif

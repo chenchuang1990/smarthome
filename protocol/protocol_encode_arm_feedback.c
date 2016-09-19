@@ -1,5 +1,6 @@
 #include "protocol.h"
 #include "bytebuffer.h"
+#include "protocol_cmdtype.h"
 //设备布防/撤防 反馈
 //-------
 //标识位 1 byte "0xCE"
@@ -11,15 +12,23 @@
 //标识位 1 byte
 //-------
 //
-unsigned int protocol_encode_arm_feedback(unsigned char * buf, unsigned int serial_num, unsigned long long ieee, unsigned char result)
+unsigned int protocol_encode_arm_feedback(unsigned char * buf, struct protocol_cmdtype_setarm *setarm, unsigned char result)
 {
 	unsigned char *p = buf;
 	bytebuffer_writebyte(&p,PROTOCOL_START_FLAG);
 	bytebuffer_writeword(&p,0x0000);
 	//bytebuffer_writeword(&p,20);
 	bytebuffer_writeword(&p,DEVICE_ARM_FEEDBACK);
-	bytebuffer_writedword(&p, serial_num);
-	bytebuffer_writequadword(&p,ieee);
+	bytebuffer_writedword(&p, setarm->serialnum);
+	bytebuffer_writequadword(&p, setarm->ieee);
+
+	bytebuffer_writebyte(&p, setarm->endpoint);
+	bytebuffer_writebyte(&p, setarm->arm.armmodel);
+	bytebuffer_writebyte(&p, setarm->arm.starthour);
+	bytebuffer_writebyte(&p, setarm->arm.startminute);
+	bytebuffer_writebyte(&p, setarm->arm.endhour);
+	bytebuffer_writebyte(&p, setarm->arm.endminute);
+	
 	bytebuffer_writebyte(&p, result);
 
 	unsigned char *p1 =  buf + 1;
