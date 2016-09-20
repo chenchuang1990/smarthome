@@ -351,7 +351,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 					     sendnonblocking(g_main_to_znp_write_fd, &permit_joining_ieee_cmd, sizeof(struct protocol_cmdtype_permit_joining_cmd));
 				     }
 					 break;
-			#if 0
+			
 				case CONFIG_REPORT:
 					{
 						printf("PROTOCOL_CONFIG_REPORT\n");
@@ -366,7 +366,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						sendnonblocking(g_main_to_znp_write_fd, &cfg_rpt_cmd, sizeof(struct protocol_cmdtype_config_reporting_cmd));
 					}
 					break;
-				
+			#if 0
 				case DEVICE_STATUS:
 					{
 					     //struct protocol_cmdtype_get_device_status_cmd get_status_cmd;
@@ -397,19 +397,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 				     }
 				     break;
 				#endif
-					
-				case READ_ONOFF_CMD:
-					{
-						struct protocol_cmdtype_get_onoff_state_cmd onoff_state_cmd;
-						protocol_parse_get_onoff_state(buffer, messagelen, &onoff_state_cmd.onoff_state);
-						if(is_device_deleted(onoff_state_cmd.onoff_state.ieee)) {
-						 	fprintf(stdout, "device has been deleted\n");
-						 	break;
-						}
-						onoff_state_cmd.cmdid = PROTOCOL_READ_ONOFF;
-						sendnonblocking(g_main_to_znp_write_fd, &onoff_state_cmd, sizeof(struct protocol_cmdtype_get_onoff_state_cmd));
-					}
-					break;
+				
 				case READ_ALARM_STAUS:
 					{
 					     unsigned char result;
@@ -430,6 +418,60 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 					     broadcast(sbuf, slen); 
 				     }
 				     break;
+				case READ_ONOFF_CMD:
+					{
+						unsigned char result, onoff = 0;
+						struct protocol_cmdtype_read_state onoff_state;
+						protocol_parse_read_state_cmd(buffer, messagelen, &onoff_state);
+						/*if(is_device_deleted(onoff_state.onoff_state.ieee)) {
+						 	fprintf(stdout, "device has been deleted\n");
+						 	break;
+						}*/
+
+						 struct endpoint * ep = gateway_get_endpoint(onoff_state.ieee, onoff_state.endpoint);
+						 if(ep) {
+					     	onoff = ep->simpledesc.device_state;
+							result = 0;
+						 }
+						 else {
+						 	result = 1;
+						 }	
+
+						unsigned char sbuf[512] = {0};
+						unsigned int slen = protocol_encode_state_feedback(sbuf, &onoff_state, READ_ONOFF_RSP, onoff);
+						sendnonblocking(fd, sbuf, slen);
+						toolkit_printbytes(sbuf, slen);
+						//onoff_state_cmd.cmdid = PROTOCOL_READ_ONOFF;
+						//sendnonblocking(g_main_to_znp_write_fd, &onoff_state_cmd, sizeof(struct protocol_cmdtype_get_onoff_state_cmd));
+					}
+					break;
+				case READ_LEVEL_CMD:
+					{
+						unsigned char result, level = 0;
+						struct protocol_cmdtype_read_state onoff_state;
+						protocol_parse_read_state_cmd(buffer, messagelen, &onoff_state);
+						/*if(is_device_deleted(onoff_state.onoff_state.ieee)) {
+						 	fprintf(stdout, "device has been deleted\n");
+						 	break;
+						}*/
+
+						 struct endpoint * ep = gateway_get_endpoint(onoff_state.ieee, onoff_state.endpoint);
+						 if(ep) {
+					     	level = ep->simpledesc.device_state;
+							result = 0;
+						 }
+						 else {
+						 	result = 1;
+						 }	
+
+						unsigned char sbuf[512] = {0};
+						unsigned int slen = protocol_encode_state_feedback(sbuf, &onoff_state, READ_LEVEL_RSP, level);
+						sendnonblocking(fd, sbuf, slen);
+						toolkit_printbytes(sbuf, slen);
+						//onoff_state_cmd.cmdid = PROTOCOL_READ_ONOFF;
+						//sendnonblocking(g_main_to_znp_write_fd, &onoff_state_cmd, sizeof(struct protocol_cmdtype_get_onoff_state_cmd));
+					}
+					break;
 				case ILLEGAL:
 					break;
 			}

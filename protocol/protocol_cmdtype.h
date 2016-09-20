@@ -155,17 +155,20 @@ struct __attribute__((packed))protocol_cmdtype_get_device_status_cmd{
 	struct protocol_cmdtype_get_device_status get_device_status;
 };
 
-struct __attribute__((packed))protocol_cmdtype_get_onoff_state {
+struct __attribute__((packed))protocol_cmdtype_read_state {
 	unsigned long long ieee;
 	unsigned int serialnum;
 	unsigned char endpoint;
 };
 
+/*
 struct __attribute__((packed))protocol_cmdtype_get_onoff_state_cmd{
 	int cmdid;
 	struct protocol_cmdtype_get_onoff_state onoff_state;
 };
+*/
 
+/*
 struct __attribute__((packed))protocol_cmdtype_get_alarm_state {
 	unsigned long long ieee;
 	unsigned int serialnum;
@@ -176,6 +179,6 @@ struct __attribute__((packed))protocol_cmdtype_get_alarm_state_cmd{
 	int cmdid;
 	struct protocol_cmdtype_get_alarm_state alarm_state;
 };
-
+*/
 
 #endif

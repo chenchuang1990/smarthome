@@ -191,7 +191,7 @@ void zcl_down_cmd_get_dstatus(struct protocol_cmdtype_get_device_status* get_dst
 			zcl_SendRead(1, 1, d->shortaddr, ZCL_CLUSTER_ID_GEN_BASIC, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC,0, get_dstatus->serialnum);
 	}
 }
-#endif
+
 
 void zcl_down_cmd_get_onoff(struct protocol_cmdtype_get_onoff_state* onoff_attr)
 {
@@ -205,5 +205,6 @@ void zcl_down_cmd_get_onoff(struct protocol_cmdtype_get_onoff_state* onoff_attr)
 		zcl_SendRead(1, onoff_attr->endpoint, d->shortaddr, ZCL_CLUSTER_ID_GEN_ON_OFF, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC,0,onoff_attr->serialnum);
 	}
 }
+#endif
 
 

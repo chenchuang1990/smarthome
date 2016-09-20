@@ -371,6 +371,7 @@ void *send_read_onoff(void *args)
 						ep = list_entry(ep_pos, struct endpoint, list);
 						if(ep) {							
 							if((ep->simpledesc.simpledesc.DeviceID != ZCL_HA_DEVICEID_MAINS_POWER_OUTLET) && 
+								(ep->simpledesc.simpledesc.DeviceID != ZCL_HA_DEVICEID_ON_OFF_OUTPUT) && 
 								(ep->simpledesc.simpledesc.DeviceID != ZCL_HA_DEVICEID_SHADE))
 								continue;
 							printf("send read cmd endpoint:%d\n", ep->simpledesc.simpledesc.Endpoint);
@@ -379,7 +380,7 @@ void *send_read_onoff(void *args)
 								device_set_status(d, DEVICE_LEAVE_NET);
 								continue;
 							}
-							unsigned short cluster_id = (ep->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_MAINS_POWER_OUTLET ? ZCL_CLUSTER_ID_GEN_ON_OFF : ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL);
+							unsigned short cluster_id = (ep->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_SHADE ? ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL : ZCL_CLUSTER_ID_GEN_ON_OFF);
 							zcl_SendRead(1, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, cluster_id, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC,0,get_sequence());
 						#if 0
 							if(ep->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_MAINS_POWER_OUTLET) {

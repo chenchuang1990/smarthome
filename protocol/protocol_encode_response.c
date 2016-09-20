@@ -132,7 +132,8 @@ unsigned int protocol_encode_warning_response(unsigned char *buf, struct zclgene
 	return p-buf;
 }
 
-unsigned int protocol_encode_report_status(unsigned char *buf, struct zclbasicstatus* status) {
+unsigned int protocol_encode_report_status(unsigned char *buf, struct zclbasicstatus* status) 
+{
 	unsigned char *p = buf;
 	bytebuffer_writebyte(&p,PROTOCOL_START_FLAG);
 	bytebuffer_writeword(&p,0);
@@ -140,6 +141,25 @@ unsigned int protocol_encode_report_status(unsigned char *buf, struct zclbasicst
 	bytebuffer_writequadword(&p,status->ieeeaddr);
 	bytebuffer_writebyte(&p,status->status);
 
+	unsigned char * len = buf + 1;
+	bytebuffer_writeword(&len, p - buf + 2);
+	unsigned char checksum = protocol_checksum(buf,p-buf);
+	bytebuffer_writebyte(&p,checksum);
+	bytebuffer_writebyte(&p,PROTOCOL_END_FLAG);
+
+	return p-buf;
+}
+
+unsigned int protocol_encode_state_feedback(unsigned char *buf, struct protocol_cmdtype_read_state *read_state, unsigned short msgid, unsigned char state) 
+{	unsigned char *p = buf;
+	bytebuffer_writebyte(&p,PROTOCOL_START_FLAG);
+	bytebuffer_writeword(&p,0);
+	bytebuffer_writeword(&p, msgid);
+	bytebuffer_writedword(&p, read_state->serialnum);
+	bytebuffer_writequadword(&p,read_state->ieee);
+	bytebuffer_writebyte(&p, read_state->endpoint);
+	bytebuffer_writebyte(&p, state);
+	
 	unsigned char * len = buf + 1;
 	bytebuffer_writeword(&len, p - buf + 2);
 	unsigned char checksum = protocol_checksum(buf,p-buf);

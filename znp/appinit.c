@@ -2062,13 +2062,14 @@ void appProcess(void * args)
 					read(znprfd, &get_dstatus, sizeof(struct protocol_cmdtype_get_device_status));
 					zcl_down_cmd_get_dstatus(&get_dstatus);
 				}
-			#endif
+			
 			case PROTOCOL_READ_ONOFF:
 				{
 					struct protocol_cmdtype_get_onoff_state onoff_state;
 					read(znprfd, &onoff_state, sizeof(struct protocol_cmdtype_get_onoff_state));
 					zcl_down_cmd_get_onoff(&onoff_state);
 				}
+			#endif
 		}
 
 	}

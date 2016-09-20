@@ -18,6 +18,6 @@ void zcl_down_cmd_level_ctrl(struct protocol_cmdtype_level_ctrl_ieee * level_ctr
 void zcl_down_cmd_permit_joining(struct protocol_cmdtype_permit_joining* permit_joining);
 void zcl_down_cmd_config_reporting(struct protocol_cmdtype_config_reporting* config_reporting);
 //void zcl_down_cmd_get_dstatus(struct protocol_cmdtype_get_device_status* get_dstatus);
-void zcl_down_cmd_get_onoff(struct protocol_cmdtype_get_onoff_state* onoff_attr);
+//void zcl_down_cmd_get_onoff(struct protocol_cmdtype_get_onoff_state* onoff_attr);
 
 #endif

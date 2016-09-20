@@ -18,7 +18,8 @@ void protocol_parse_level_ctrl(unsigned char * buf, unsigned short len, struct p
 void protocol_parse_permit_joining(unsigned char * buf, unsigned short len, struct protocol_cmdtype_permit_joining * joining);
 void protocol_parse_config_reporting(unsigned char * buf, unsigned short len, struct protocol_cmdtype_config_reporting * cfg_report);
 void protocol_parse_get_device_status(unsigned char * buf, unsigned short len, struct protocol_datatype_online_status * get_status);
-void protocol_parse_get_onoff_state(unsigned char *buf, unsigned short len, struct protocol_cmdtype_get_onoff_state *onoff_state);
+//void protocol_parse_get_onoff_state(unsigned char *buf, unsigned short len, struct protocol_cmdtype_get_onoff_state *onoff_state);
+void protocol_parse_read_state_cmd(unsigned char *buf, unsigned short len, struct protocol_cmdtype_read_state *read_state);
 void protocol_parse_login_feedback(unsigned char *buf, unsigned short len, struct protocol_datatype_login_feedback *feedback);
 
 unsigned int protocol_encode_add_del_device(unsigned char * buf, unsigned long long ieeeaddr, unsigned char add);
@@ -38,5 +39,6 @@ unsigned int protocol_encode_level_response(unsigned char *buf, struct zcllevlct
 unsigned int protocol_encode_readlevel_response(unsigned char *buf, struct zclreadlevelctlrsp * response);
 unsigned int protocol_encode_warning_response(unsigned char *buf, struct zclgeneraldefaultresponse *response);
 unsigned int protocol_encode_report_status(unsigned char *buf, struct zclbasicstatus* status);
+unsigned int protocol_encode_state_feedback(unsigned char *buf, struct protocol_cmdtype_read_state *read_state, unsigned short msgid, unsigned char state);
 //unsigned int protocol_encode_onoff_report(unsigned char *buf, struct zclonoffreport* status);
 #endif

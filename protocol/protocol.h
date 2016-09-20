@@ -21,6 +21,7 @@
 #define CONFIG_REPORT	  0x8014
 #define DEVICE_STATUS	  0x8015
 #define READ_ONOFF_CMD	  0x8016
+#define READ_LEVEL_CMD	  0x8018
 #define READ_ALARM_STAUS  0x801f
 
 

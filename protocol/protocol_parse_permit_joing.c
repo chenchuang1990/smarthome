@@ -192,13 +192,13 @@ void protocol_parse_get_device_status(unsigned char * buf, unsigned short len, s
 	bytebuffer_readquadword(&p, &get_status->ieee);
 	bytebuffer_readbyte(&p, &get_status->period);
 }
-void protocol_parse_get_onoff_state(unsigned char *buf, unsigned short len, struct protocol_cmdtype_get_onoff_state *onoff_state)
+void protocol_parse_read_state_cmd(unsigned char *buf, unsigned short len, struct protocol_cmdtype_read_state *read_state)
 {
 	const unsigned char * p = buf;
 	bytebuffer_skipbytes(&p, 5);
-	bytebuffer_readdword(&p, &onoff_state->serialnum);
-	bytebuffer_readquadword(&p, &onoff_state->ieee);
-	bytebuffer_readbyte(&p, &onoff_state->endpoint);
+	bytebuffer_readdword(&p, &read_state->serialnum);
+	bytebuffer_readquadword(&p, &read_state->ieee);
+	bytebuffer_readbyte(&p, &read_state->endpoint);
 }
 
 
