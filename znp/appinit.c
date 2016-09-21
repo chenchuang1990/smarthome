@@ -1045,7 +1045,8 @@ void clear_device_state(struct device *d)
 	
 	list_for_each_safe(pos,n,&d->eplisthead) {
 		ep = list_entry(pos, struct endpoint, list);
-		if(ep && (ZCL_HA_DEVICEID_MAINS_POWER_OUTLET == ep->simpledesc.simpledesc.DeviceID)) {
+		if(ep && (ZCL_HA_DEVICEID_MAINS_POWER_OUTLET == ep->simpledesc.simpledesc.DeviceID || 
+			ZCL_HA_DEVICEID_ON_OFF_OUTPUT== ep->simpledesc.simpledesc.DeviceID)) {
 			//ep->simpledesc.device_state = 0;
 			sqlitedb_update_device_state(d->ieeeaddr, ep->simpledesc.simpledesc.Endpoint, 0);
 		}
