@@ -30,7 +30,7 @@
 #include "zcl_ha.h"
 
 //#define DEBUG_EP 1
-//#define DEBUG
+#define DEBUG
 
 extern int g_main_to_znp_write_fd;
 extern struct connection * g_serverconn;
@@ -533,6 +533,7 @@ enum dn {
 	WARN,
 	SHADE,
 	BELL,
+	WATER,
 	UNKNOWN
 };
 
@@ -546,7 +547,9 @@ char utf8_table[][32] = {{0xe9, 0x94, 0xae, 0xe5, 0xbc, 0x80, 0xe5, 0x85, 0xb3, 
 								{0xe6, 0x8a, 0xa5, 0xe8, 0xad, 0xa6, 0xe5, 0x99, 0xa8, 0},
 								{0xe7, 0xaa, 0x97, 0xe5, 0xb8, 0x98, 0},
 								{0xe9, 0x97, 0xa8, 0xe9, 0x93, 0x83, 0},
-								{0xe6, 0x9c, 0xaa, 0xe5, 0x91, 0xbd, 0xe5, 0x90, 0x8d, 0}};
+								{0xe6, 0xb0, 0xb4, 0xe6, 0xb5, 0xb8, 0xe4, 0xbc, 0xa0, 0xe6, 0x84, 0x9f, 0xe5, 0x99, 0xa8, 0},
+								{0xe6, 0x9c, 0xaa, 0xe5, 0x91, 0xbd, 0xe5, 0x90, 0x8d, 0}
+						};
 
 int devicetype_valid(unsigned short devicetype)
 {
@@ -614,6 +617,9 @@ void set_devicename(struct device *d, unsigned short devicetypeid, unsigned shor
 		case SS_IAS_ZONE_TYPE_KEY_FOB:
 			snprintf(name, sizeof(name), "%s", utf8_table[KEY]);
 			break;
+		case SS_IAS_ZONE_TYPE_WATER_SENSOR:
+			printf("SS_IAS_ZONE_TYPE_WATER_SENSOR\n");
+			snprintf(name, sizeof(name), "%s", utf8_table[WATER]);
 		}
 		break;
 	case ZCL_HA_DEVICEID_IAS_WARNING_DEVICE:
@@ -742,6 +748,7 @@ void event_recvznp(struct eventhub * hub, int fd){
 										break;
 									case SS_IAS_ZONE_TYPE_GAS_SENSOR:
 									case SS_IAS_ZONE_TYPE_FIRE_SENSOR:
+									case SS_IAS_ZONE_TYPE_WATER_SENSOR:
 										warn_mode = SS_IAS_START_WARNING_WARNING_MODE_FIRE;
 										break;
 									case SS_IAS_ZONE_TYPE_KEY_FOB:

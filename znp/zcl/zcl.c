@@ -891,6 +891,7 @@ enum dn {
 	WARN,
 	SHADE,
 	BELL,
+	WATER,
 	UNKNOWN
 };
 
@@ -903,7 +904,8 @@ void handle_outlet_devicename(struct device *d)
 	int slen = 0;
 
 	ep = list_entry(d->eplisthead.next, struct endpoint, list); 
-	if(ep && (ZCL_HA_DEVICEID_MAINS_POWER_OUTLET == ep->simpledesc.simpledesc.DeviceID)) {
+	if(ep && (ZCL_HA_DEVICEID_MAINS_POWER_OUTLET == ep->simpledesc.simpledesc.DeviceID || 
+		ZCL_HA_DEVICEID_ON_OFF_OUTPUT == ep->simpledesc.simpledesc.DeviceID)) {
 		if(!strncasecmp(d->modelidentifier, "Z809", 4)) {
 			snprintf(name, sizeof(name), "%s", utf8_table[SOCKET]);
 		}
