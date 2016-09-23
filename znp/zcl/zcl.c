@@ -920,13 +920,15 @@ void handle_outlet_devicename(struct device *d)
 			str[32] = 0;
 			
 			for(i = 0; i < 2; str = NULL, i++) {
-				substrp[i] = strtok_r(str, "-", &out_ptr);
+				substrp[i] = strtok_r(str, "-+", &out_ptr);
 				if(NULL == substrp[i])
 					break;
 				printf("--> %s\n", substrp[i]);
 			}
 			if(!strncasecmp(substrp[1], "SKT", 3))
 				snprintf(name, sizeof(name), "%s", utf8_table[SOCKET]);
+			else
+				snprintf(name, sizeof(name), "%d%s", d->activeep.ActiveEPCount, utf8_table[SWITCH]);
 		}
 		else
 			snprintf(name, sizeof(name), "%d%s", d->activeep.ActiveEPCount, utf8_table[SWITCH]);

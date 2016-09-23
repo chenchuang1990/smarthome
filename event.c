@@ -30,7 +30,11 @@
 #include "zcl_ha.h"
 
 //#define DEBUG_EP 1
-#define DEBUG
+//#define DEBUG
+#define TESTMODE
+#ifdef TESTMODE
+#define TEST_ID	0x80ff
+#endif
 
 extern int g_main_to_znp_write_fd;
 extern struct connection * g_serverconn;
@@ -472,6 +476,10 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						//sendnonblocking(g_main_to_znp_write_fd, &onoff_state_cmd, sizeof(struct protocol_cmdtype_get_onoff_state_cmd));
 					}
 					break;
+				case TEST_ID:
+					{
+					}
+					break;
 				case ILLEGAL:
 					break;
 			}
@@ -556,7 +564,8 @@ int devicetype_valid(unsigned short devicetype)
 	if(ZCL_HA_DEVICEID_IAS_ANCILLARY_CONTROL_EQUIPMENT == devicetype || 
 		ZCL_HA_DEVICEID_IAS_ZONE == devicetype || 
 		ZCL_HA_DEVICEID_IAS_WARNING_DEVICE == devicetype || 
-		ZCL_HA_DEVICEID_SHADE == devicetype) 
+		ZCL_HA_DEVICEID_SHADE == devicetype ||
+		ZCL_HA_DEVICEID_WINDOW_COVERING_DEVICE == devicetype) 
 		//|| ZCL_HA_DEVICEID_MAINS_POWER_OUTLET == devicetype)
 		return 1;
 	else 
@@ -618,7 +627,6 @@ void set_devicename(struct device *d, unsigned short devicetypeid, unsigned shor
 			snprintf(name, sizeof(name), "%s", utf8_table[KEY]);
 			break;
 		case SS_IAS_ZONE_TYPE_WATER_SENSOR:
-			printf("SS_IAS_ZONE_TYPE_WATER_SENSOR\n");
 			snprintf(name, sizeof(name), "%s", utf8_table[WATER]);
 		}
 		break;

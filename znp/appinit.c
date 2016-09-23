@@ -599,10 +599,11 @@ static void send_read_attr_cmd(struct device *d)
 	readcmd.attrID[6] = ATTRID_BASIC_DATE_CODE;         
 	readcmd.attrID[7] = ATTRID_BASIC_POWER_SOURCE;
 
-	//zcl_SendRead(message->DstEndpoint, message->SrcEndpoint, message->SrcAddr, ZCL_CLUSTER_ID_GEN_BASIC, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC,0,0);
-	printf("send_read_attr_cmd:send read attribute cmd\n");
-	//zcl_SendRead(1, 1, d->shortaddr, ZCL_CLUSTER_ID_GEN_BASIC, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC, 0, get_sequence());
-	zcl_SendRead(1, 1, d->shortaddr, ZCL_CLUSTER_ID_GEN_BASIC, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC, 0, 0);
+	struct endpoint *ep = list_entry(d->eplisthead.next, struct endpoint, list);
+	if(ep) {
+		printf("send_read_attr_cmd:send read attribute cmd\n");
+		zcl_SendRead(1, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, ZCL_CLUSTER_ID_GEN_BASIC, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC, 0, 0);
+	}
 }
 
 static uint8_t mtZdoSimpleDescRspCb(SimpleDescRspFormat_t *msg)

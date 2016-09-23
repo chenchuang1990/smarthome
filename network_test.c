@@ -315,7 +315,7 @@ int get_onoff_period(void)
 
 extern uint8_t initDone;
 
-#define TIMESTAMPOUT 10
+#define TIMESTAMPOUT 30
 
 int check_device_timeout(struct device *d)
 {
@@ -372,7 +372,8 @@ void *send_read_onoff(void *args)
 						if(ep) {							
 							if((ep->simpledesc.simpledesc.DeviceID != ZCL_HA_DEVICEID_MAINS_POWER_OUTLET) && 
 								(ep->simpledesc.simpledesc.DeviceID != ZCL_HA_DEVICEID_ON_OFF_OUTPUT) && 
-								(ep->simpledesc.simpledesc.DeviceID != ZCL_HA_DEVICEID_SHADE))
+								(ep->simpledesc.simpledesc.DeviceID != ZCL_HA_DEVICEID_SHADE) && 
+								(ep->simpledesc.simpledesc.DeviceID != ZCL_HA_DEVICEID_WINDOW_COVERING_DEVICE))
 								continue;
 							printf("send read cmd endpoint:%d\n", ep->simpledesc.simpledesc.Endpoint);
 							if(check_device_timeout(d)) {
@@ -380,7 +381,12 @@ void *send_read_onoff(void *args)
 								device_set_status(d, DEVICE_LEAVE_NET);
 								continue;
 							}
-							unsigned short cluster_id = (ep->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_SHADE ? ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL : ZCL_CLUSTER_ID_GEN_ON_OFF);
+							//unsigned short cluster_id = (ep->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_SHADE ? ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL : ZCL_CLUSTER_ID_GEN_ON_OFF);
+							unsigned short cluster_id;
+							if(cluster_id == ZCL_HA_DEVICEID_SHADE || cluster_id == ZCL_HA_DEVICEID_WINDOW_COVERING_DEVICE)
+								cluster_id = ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL;
+							else
+								cluster_id = ZCL_CLUSTER_ID_GEN_ON_OFF;
 							zcl_SendRead(1, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, cluster_id, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC,0,get_sequence());
 						#if 0
 							if(ep->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_MAINS_POWER_OUTLET) {
