@@ -1002,9 +1002,13 @@ int zcl_proccessincomingmessage(IncomingMsgFormat_t * message){
 			break;
 		case ZCL_CLUSTER_ID_GEN_ON_OFF:
 			handle_onoff_state(&zclmessage);
+			if(d->nonedcheck == 1)
+				d->nonedcheck = 0;
 			break;
 		case ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL:
 			handle_levelctl_state(&zclmessage);
+			if(d->nonedcheck == 1)
+				d->nonedcheck = 0;
 			//handle_levelctr_rsp(&zclmessage);
 			break;
 		case ZCL_CLUSTER_ID_SS_IAS_WD:

@@ -351,9 +351,10 @@ void *send_read_onoff(void *args)
 	read_report->attrList[0].attrID = 0x0000;
 #endif
 	/*init the timestemp of all active device*/
+	sleep(10);
 	list_for_each_safe(pos, n, &gw->head) { 
 		d = list_entry(pos, struct device, list); 
-		if((!device_check_status(d, DEVICE_APP_DEL)) && (!device_check_status(d, DEVICE_LEAVE_NET))) {
+		if(d && (!device_check_status(d, DEVICE_APP_DEL)) && (!device_check_status(d, DEVICE_LEAVE_NET))) {
 			d->timestamp = time(NULL);
 		}
 	}
@@ -363,7 +364,10 @@ void *send_read_onoff(void *args)
 			//interval = get_onoff_period();
 			list_for_each_safe(pos, n, &gw->head) { 
 				d = list_entry(pos, struct device, list); 
-				if(d && (!device_check_status(d, DEVICE_APP_DEL)) && (!device_check_status(d, DEVICE_LEAVE_NET))) {
+				printf("send all ieee:%llx\n", d->ieeeaddr);
+				if(d && (!device_check_status(d, DEVICE_APP_DEL)) && 
+					(!device_check_status(d, DEVICE_LEAVE_NET)) && (d->nonedcheck == 0)) {
+					
 					printf("send read cmd ieee:%llx\n", d->ieeeaddr);
 					
 					//d->timestamp = time(NULL);
@@ -372,30 +376,27 @@ void *send_read_onoff(void *args)
 						if(ep) {							
 							if((ep->simpledesc.simpledesc.DeviceID != ZCL_HA_DEVICEID_MAINS_POWER_OUTLET) && 
 								(ep->simpledesc.simpledesc.DeviceID != ZCL_HA_DEVICEID_ON_OFF_OUTPUT) && 
-								(ep->simpledesc.simpledesc.DeviceID != ZCL_HA_DEVICEID_SHADE) && 
-								(ep->simpledesc.simpledesc.DeviceID != ZCL_HA_DEVICEID_WINDOW_COVERING_DEVICE))
+								(ep->simpledesc.simpledesc.DeviceID != ZCL_HA_DEVICEID_SHADE)) {
+								//(ep->simpledesc.simpledesc.DeviceID != ZCL_HA_DEVICEID_WINDOW_COVERING_DEVICE))
 								continue;
+							}
 							printf("send read cmd endpoint:%d\n", ep->simpledesc.simpledesc.Endpoint);
+							//#if 0
 							if(check_device_timeout(d)) {
 								printf("send_read_onoff:DEVICE_LEAVE_NET\n");
-								device_set_status(d, DEVICE_LEAVE_NET);
+								//device_set_status(d, DEVICE_LEAVE_NET);
+								d->nonedcheck = 1;
 								continue;
 							}
-							//unsigned short cluster_id = (ep->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_SHADE ? ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL : ZCL_CLUSTER_ID_GEN_ON_OFF);
-							unsigned short cluster_id;
-							if(cluster_id == ZCL_HA_DEVICEID_SHADE || cluster_id == ZCL_HA_DEVICEID_WINDOW_COVERING_DEVICE)
+							//#endif
+							unsigned short cluster_id = (ep->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_SHADE ? ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL : ZCL_CLUSTER_ID_GEN_ON_OFF);
+							//unsigned short cluster_id;
+							/*if(cluster_id == ZCL_HA_DEVICEID_SHADE || cluster_id == ZCL_HA_DEVICEID_WINDOW_COVERING_DEVICE)
 								cluster_id = ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL;
 							else
-								cluster_id = ZCL_CLUSTER_ID_GEN_ON_OFF;
-							zcl_SendRead(1, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, cluster_id, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC,0,get_sequence());
-						#if 0
-							if(ep->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_MAINS_POWER_OUTLET) {
-								zcl_SendRead(1, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, ZCL_CLUSTER_ID_GEN_ON_OFF, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC,0,get_sequence());
-							}								
-							else if(ep->simpledesc.simpledesc.DeviceID == ZCL_HA_DEVICEID_SHADE) {
-								zcl_SendRead(1, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC,0,get_sequence());
-							}
-						#endif
+								cluster_id = ZCL_CLUSTER_ID_GEN_ON_OFF;*/
+							
+							zcl_SendRead(1, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, cluster_id, &readcmd, ZCL_FRAME_CLIENT_SERVER_DIR,0,get_sequence());
 						}
 						#if 0
 						for(i = 0; i < ep->simpledesc.simpledesc.NumInClusters; i++) {
@@ -413,8 +414,13 @@ void *send_read_onoff(void *args)
 					}					
 					//sleep(interval);
 				}
+				else {
+					printf("DEVICE_APP_DEL:%d\n", (d->status & DEVICE_APP_DEL) > 0);
+					printf("DEVICE_LEAVE_NET:%d\n", (d->status & DEVICE_LEAVE_NET) > 0);
+					printf("d->noneedcheck:%d\n", d->nonedcheck);
+				}
 			}
-			sleep(3);
+			sleep(5);
 		}
 	}
 	//free(read_report);

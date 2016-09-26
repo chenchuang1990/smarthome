@@ -34,6 +34,11 @@
 #define TESTMODE
 #ifdef TESTMODE
 #define TEST_ID	0x80ff
+struct test_header {
+	unsigned int serialnum;
+	unsigned long long ieee;
+	unsigned char endpoint;
+};
 #endif
 
 extern int g_main_to_znp_write_fd;
@@ -478,6 +483,31 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 					break;
 				case TEST_ID:
 					{
+						const unsigned char *p = buffer;
+						struct test_header test;
+						zclCfgReportCmd_t CfgReportCmd;
+						
+						bytebuffer_skipbytes(&p, 5);
+						bytebuffer_readdword(&p, &test.serialnum);
+						bytebuffer_readquadword(&p, &test.ieee);
+						bytebuffer_readbyte(&p, &test.endpoint);
+						printf("serialnum:%d ieee:%llx endpoint:%x\n", test.serialnum, test.ieee, test.endpoint);
+						unsigned char change = 0;
+						memset(&CfgReportCmd, 0, sizeof(CfgReportCmd));
+						CfgReportCmd.numAttr = 1;
+						CfgReportCmd.attrList[0].direction = 0;
+						CfgReportCmd.attrList[0].attrID = 0x0000;
+						CfgReportCmd.attrList[0].dataType = 0x10;
+						CfgReportCmd.attrList[0].minReportInt = 0;
+						CfgReportCmd.attrList[0].maxReportInt = 30;
+						CfgReportCmd.attrList[0].timeoutPeriod = 0;
+						CfgReportCmd.attrList[0].reportableChange = NULL;
+
+						struct device *d = gateway_getdevice(getgateway(), test.ieee);
+						if(d) {
+							printf("gateway_get_endpoint\n");
+							zcl_SendConfigReportCmd(1, 1, d->shortaddr, 0x0006, &CfgReportCmd, 0, 1, get_sequence());
+						}
 					}
 					break;
 				case ILLEGAL:

@@ -22,6 +22,7 @@
 #define DEVICE_SS_SEND_ALARM_NOTIFICATION 256
 #define DEVICE_SS_SEND_NO_ALARM_NOTIFICATION 512
 #define DEVICE_LEAVE_NET 1024 
+//#define DEVICE_NONEED_CHECK	(1 << 11)
 
 /*NOTE: when you want to add a new member*/
 struct simpledesc{
@@ -59,6 +60,7 @@ struct device{
 	struct list_head eplisthead;
 	struct list_head list;
 	time_t timestamp;
+	unsigned char nonedcheck;
 };
 
 struct gateway{
