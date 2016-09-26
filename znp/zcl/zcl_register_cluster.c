@@ -15,14 +15,14 @@ int zcl_register_cluster_ss(){
 	in_cluster[0] = ZCL_CLUSTER_ID_GEN_BASIC;
 	in_cluster[1] = ZCL_CLUSTER_ID_GEN_POWER_CFG;
 	in_cluster[2] = ZCL_CLUSTER_ID_GEN_IDENTIFY;
-	in_cluster[3] = ZCL_CLUSTER_ID_GEN_ON_OFF_SWITCH_CONFIG;
+	in_cluster[3] = ZCL_CLUSTER_ID_GEN_ON_OFF;
 	in_cluster[4] = ZCL_CLUSTER_ID_GEN_COMMISSIONING;
 	in_cluster[5] = ZCL_CLUSTER_ID_GEN_POLL_CONTROL;
 	in_cluster[6] = ZCL_CLUSTER_ID_HA_DIAGNOSTIC;
 	in_cluster[7] = ZCL_CLUSTER_ID_SS_IAS_ZONE;	
 	in_cluster[8] = ZCL_CLUSTER_ID_SS_IAS_ACE;
 	in_cluster[9] = ZCL_CLUSTER_ID_SS_IAS_WD;
-	in_cluster[10] = ZCL_CLUSTER_ID_GEN_ON_OFF;
+	in_cluster[10] = ZCL_CLUSTER_ID_GEN_ON_OFF_SWITCH_CONFIG;
 	in_cluster[11] = ZCL_CLUSTER_ID_MS_TEMPERATURE_MEASUREMENT;
 
 	unsigned char out_cluster_count = 13;
@@ -31,7 +31,7 @@ int zcl_register_cluster_ss(){
 	out_cluster[0] = ZCL_CLUSTER_ID_GEN_BASIC;
 	out_cluster[1] = ZCL_CLUSTER_ID_GEN_POWER_CFG;
 	out_cluster[2] = ZCL_CLUSTER_ID_GEN_IDENTIFY;
-	out_cluster[3] = ZCL_CLUSTER_ID_GEN_ON_OFF_SWITCH_CONFIG;
+	out_cluster[3] = ZCL_CLUSTER_ID_GEN_ON_OFF;
 	out_cluster[4] = ZCL_CLUSTER_ID_GEN_COMMISSIONING;
 	out_cluster[5] = ZCL_CLUSTER_ID_GEN_POLL_CONTROL;
 	out_cluster[6] = ZCL_CLUSTER_ID_HA_DIAGNOSTIC;
@@ -39,7 +39,7 @@ int zcl_register_cluster_ss(){
 	out_cluster[8] = ZCL_CLUSTER_ID_SS_IAS_ACE;
 	out_cluster[9] = ZCL_CLUSTER_ID_SS_IAS_WD;
 	out_cluster[10] = ZCL_CLUSTER_ID_MS_TEMPERATURE_MEASUREMENT;
-	out_cluster[11] = ZCL_CLUSTER_ID_GEN_ON_OFF;
+	out_cluster[11] = ZCL_CLUSTER_ID_GEN_ON_OFF_SWITCH_CONFIG;
 	out_cluster[12] = ZCL_CLUSTER_ID_GEN_SCENES;
 
 
@@ -49,7 +49,8 @@ int zcl_register_cluster_ss(){
 }
 
 
-int zcl_register_cluster(unsigned char in_cluster_count, unsigned short * in_cluster,unsigned char out_cluster_count, unsigned short * out_cluster, unsigned char endpoint, unsigned short appdevicetypeid){ 
+int zcl_register_cluster(unsigned char in_cluster_count, unsigned short * in_cluster,unsigned char out_cluster_count, unsigned short * out_cluster, unsigned char endpoint, unsigned short appdevicetypeid)
+{ 
 	if(in_cluster_count > MAX_CLUSTER_COUNT || out_cluster_count > MAX_CLUSTER_COUNT){
 		return 1;
 	} 
@@ -67,7 +68,8 @@ int zcl_register_cluster(unsigned char in_cluster_count, unsigned short * in_clu
 	return 0;
 }
 
-int zcl_register_cluster_closures(){
+int zcl_register_cluster_closures()
+{
 	unsigned char in_cluster_count = 0;
 	unsigned short in_cluster[MAX_CLUSTER_COUNT] = {0};
 
