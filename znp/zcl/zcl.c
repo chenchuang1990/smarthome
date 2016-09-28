@@ -938,7 +938,10 @@ void handle_outlet_devicename(struct device *d)
 		memcpy(d->devicename, name, min(slen, MAXNAMELEN-1));
 		//toolkit_printbytes((unsigned char *)d->devicename, slen);
 		d->devicename[MAXNAMELEN-1] = 0;
-		sqlitedb_update_devicename(d->ieeeaddr, d->devicename);
+		char sbuf[128] = {0};
+		unsigned int slen = protocol_encode_add_del_device(sbuf, d->ieeeaddr, 1);
+		broadcast(sbuf, slen);
+		sqlitedb_update_devicename(d->ieeeaddr, d->devicename);		
 	}
 }
 
@@ -1201,7 +1204,6 @@ int zcl_handle_basic(unsigned char * buf, unsigned short buflen, struct device *
 			}
 		}
 	}
-
 
 	return 0;
 }

@@ -61,8 +61,6 @@ unsigned int protocol_encode_add_del_device(unsigned char * buf, unsigned long l
 	bytebuffer_writebyte(&p,add); 
 	bytebuffer_writequadword(&p, ieeeaddr);
 
-	
-
 	struct device *d;
 	d = gateway_getdevice(getgateway(), ieeeaddr);
 
