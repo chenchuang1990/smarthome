@@ -797,6 +797,7 @@ void event_recvznp(struct eventhub * hub, int fd){
 										break;
 									}
 									if(wd_device && !device_check_status(wd_device, DEVICE_APP_DEL)) {
+										printf("wd_device shortaddr is 0x%04x\n", wd_device->shortaddr);
 										event_send_warning(wd_ep, wd_device->ieeeaddr,PROTOCOL_WARNING, warn_mode);
 									}
 									
@@ -808,6 +809,12 @@ void event_recvznp(struct eventhub * hub, int fd){
 						ep->simpledesc.zcl_transnum = req.trans_num;
 						sqlitedb_update_device_seq(req.ieeeaddr, req.endpoint, req.trans_num);
 					}
+					else {
+						printf("warning:[event_recvznp] current seq(%d) is before last seq(%d)\n", req.trans_num, ep->simpledesc.zcl_transnum);
+					}
+				}
+				else {
+					printf("error:[event_recvznp] no ep\n");
 				}
 			}
 			break;

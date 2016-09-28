@@ -152,7 +152,7 @@ int main()
 		eventhub_register(hub, connection_getfd(znpconnection));
 		connrbtree_insert(znpconnection);
 	}
-	send_period_request();
+	//send_period_request();
 
 	eventhub_start(hub);
 }

@@ -46,6 +46,7 @@
 #include <pthread.h>
 #include <time.h>
 
+
 #include "rpc.h"
 #include "mtSys.h"
 #include "mtZdo.h"
@@ -1298,6 +1299,7 @@ static uint8_t mtZdoLeaveIndCb(LeaveIndFormat_t *msg)
 			ep = list_entry(pos, struct endpoint, list);
 			if(ep) {
 				ep->simpledesc.zcl_transnum = 0;
+				ep->simpledesc.arm.armmodel = 0;
 				sqlitedb_update_device_seq(msg->ExtAddr, ep->simpledesc.simpledesc.Endpoint, 0);
 			}
 			else
@@ -1354,7 +1356,7 @@ static uint8_t mtAfIncomingMsgCb(IncomingMsgFormat_t *msg)
 	consolePrint("mtAfIncomingMsgCb\n");
 	//consolePrint("GroupId: 0x%04X\n", msg->GroupId);
 	consolePrint("ClusterId: 0x%04X\n", msg->ClusterId);
-//	consolePrint("SrcAddr: 0x%04X\n", msg->SrcAddr);
+	consolePrint("SrcAddr: 0x%04X\n", msg->SrcAddr);
 	consolePrint("SrcEndpoint: 0x%02X\n", msg->SrcEndpoint);
 //	consolePrint("DstEndpoint: 0x%02X\n", msg->DstEndpoint);
 //	consolePrint("WasVroadcast: 0x%02X\n", msg->WasVroadcast);
@@ -1692,17 +1694,29 @@ static uint8_t setNVChanList(uint32_t chanList)
 	return status;
 }
 
+static int noneed_nv_start(void)
+{
+	int ret = access("/home/root/neednv", F_OK);
+	printf("ret = %d\n", ret);
+	return (0 == ret) ? 1 : 0;
+}
+
 static int32_t startNetwork(void)
 {
 	uint8_t devType;
 	int32_t status;
 	uint8_t newNwk = 0;
-
+	
+	printf("noneed_nv_start\n");
 	do
 	{
-		//		status = setNVStartup(
-		//		ZCD_STARTOPT_CLEAR_STATE | ZCD_STARTOPT_CLEAR_CONFIG);
-		status = setNVStartup(0);
+		if(noneed_nv_start()) {
+			printf("setNVStartup\n");
+			status = setNVStartup(ZCD_STARTOPT_CLEAR_STATE | ZCD_STARTOPT_CLEAR_CONFIG);
+			system("rm /home/root/neednv");
+		}
+		else
+			status = setNVStartup(0);
 		newNwk = 1;
 
 	} while (0);

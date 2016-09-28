@@ -15,7 +15,7 @@
 #include "key.h"
 
 #define NOKEY 0
-#define PERMIT_JOINING_DURATION	120
+#define PERMIT_JOINING_DURATION	10
 
 extern devStates_t devState;
 
@@ -32,6 +32,7 @@ void set_led_onoff(int led, int on)
 		ioctl(led_fd, on, led);
 }
 
+#if 0
 int *get_led_cnt(void)
 {
 	return &led_cnt;
@@ -40,12 +41,6 @@ int *get_led_cnt(void)
 void set_led_cnt(int cnt)
 {
 	led_cnt = cnt;
-}
-
-void start_led_timer(int duration)
-{	
-	set_led_onoff(LED_set, LED_ON);
-	set_led_cnt(duration);
 }
 
 void *wait_led_off(void *arg)
@@ -63,14 +58,61 @@ void *wait_led_off(void *arg)
 		sleep(1);
 	}
 }
+#endif
+
+static unsigned char clear_flag = 0;
+static unsigned char key_down = 0;
+static int ledcnt = -1;
+
+void start_led_timer(int duration)
+{	
+	ledcnt = duration;
+	ioctl(led_fd, LED_ON, LED_set);
+}
+
+void *key_down_count(void *arg)
+{
+	int count = 0;
+	while(1) {
+		if(key_down) {
+			printf("count:%d\n", count);
+			ledcnt = PERMIT_JOINING_DURATION;
+			if(count++ > 15) {
+				clear_flag = 1;
+				ioctl(led_fd, LED_OFF, LED_W);
+				usleep(500000);
+				ioctl(led_fd, LED_ON, LED_W);
+				usleep(500000);
+			}
+		}
+		else {
+			//printf("key up\n");
+			count = 0;
+			if(ledcnt > 0) {
+				printf("ledcnt: %d\n", ledcnt);
+				ledcnt--;
+			}
+			else if(ledcnt == 0) {
+				printf("ledcnt: 0\n");
+				ioctl(led_fd, LED_OFF, LED_set);
+				ledcnt--;
+			}
+		}
+		sleep(1);
+	}
+	
+	return (void *)0;
+}
 
 void led_monitor_start(void)
 {
 	pthread_t tid;
 	
 	led_cnt = -1;
-	pthread_create(&tid, NULL, wait_led_off, NULL);
+	//pthread_create(&tid, NULL, wait_led_off, NULL);
+	pthread_create(&tid, NULL, key_down_count, NULL);
 }
+
 
 void *key_event_process(void *args)
 {
@@ -112,19 +154,42 @@ void *key_event_process(void *args)
 			{
 				switch(t.code)
 				{
-			    	
 			    	case 257:
 			    		printf("key257 %s\n",(t.value)?"Released":"Pressed");
 			    	break;
 			    	
 			    	case 258:
 			    		printf("key258 %s\n",(t.value)?"Released":"Pressed");
+						if(0 == t.value) {
+							key_down = 1;
+						}
+						else if(1 == t.value) {
+							key_down = 0;
+							if(clear_flag) {
+								ioctl(led_fd, LED_OFF, LED_W);
+								usleep(500000);
+								ioctl(led_fd, LED_ON, LED_W);
+								usleep(500000);
+								printf("clear nv param\n");
+								system("touch /home/root/neednv");
+								system("rm /home/root/gateway.db");
+								system("reboot");
+							}
+							else {
+								printf("start_led_timer\n");
+								start_led_timer(PERMIT_JOINING_DURATION);
+								request.Timeout = PERMIT_JOINING_DURATION; //allowed joining whthin 60s
+								sendcmd((unsigned char *)&request, ZB_PERMIT_JOINING_REQ);
+							}
+						}
+						#if 0
 						if(1 == t.value) {
 							set_led_cnt(PERMIT_JOINING_DURATION);
 							set_led_onoff(LED_set, LED_ON);							
 							request.Timeout = PERMIT_JOINING_DURATION; //allowed joining whthin 60s
 							sendcmd((unsigned char *)&request, ZB_PERMIT_JOINING_REQ);
 						}
+						#endif
 							
 			    	break;
 			    	
