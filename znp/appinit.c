@@ -1163,7 +1163,6 @@ static uint8_t mtZdoEndDeviceAnnceIndCb(EndDeviceAnnceIndFormat_t *msg)
 	else if(d && device_check_status(d, DEVICE_ACTIVE)) {
 		printf("report new device\n");
 		report_new_device(d);
-		//device_set_status(d, DEVICE_ACTIVE);
 	}
 
 	if(d && !list_empty(&d->eplisthead)) {
@@ -2019,7 +2018,7 @@ void appProcess(void * args)
 	nvWrite.Value[0] = 1;
 	status = sysOsalNvWrite(&nvWrite);
 
-	initDone = 1;
+	//initDone = 1;
 	//while(devState != DEV_ZB_COORD);
 	pthread_create(&keythread, NULL, keypresstask, NULL);
 

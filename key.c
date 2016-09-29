@@ -15,7 +15,7 @@
 #include "key.h"
 
 #define NOKEY 0
-#define PERMIT_JOINING_DURATION	10
+#define PERMIT_JOINING_DURATION	120
 
 extern devStates_t devState;
 
@@ -75,9 +75,9 @@ void *key_down_count(void *arg)
 	int count = 0;
 	while(1) {
 		if(key_down) {
-			printf("count:%d\n", count);
+			//printf("count:%d\n", count);
 			ledcnt = PERMIT_JOINING_DURATION;
-			if(count++ > 15) {
+			if(count++ > 30) {
 				clear_flag = 1;
 				ioctl(led_fd, LED_OFF, LED_W);
 				usleep(500000);
@@ -89,11 +89,11 @@ void *key_down_count(void *arg)
 			//printf("key up\n");
 			count = 0;
 			if(ledcnt > 0) {
-				printf("ledcnt: %d\n", ledcnt);
+				//printf("ledcnt: %d\n", ledcnt);
 				ledcnt--;
 			}
 			else if(ledcnt == 0) {
-				printf("ledcnt: 0\n");
+				//printf("ledcnt: 0\n");
 				ioctl(led_fd, LED_OFF, LED_set);
 				ledcnt--;
 			}
@@ -113,6 +113,7 @@ void led_monitor_start(void)
 	pthread_create(&tid, NULL, key_down_count, NULL);
 }
 
+extern uint8_t initDone;
 
 void *key_event_process(void *args)
 {
@@ -130,6 +131,7 @@ void *key_event_process(void *args)
 	pthread_mutex_unlock(&state_lock);
 
 	set_led_onoff(LED_Z, LED_ON);
+	initDone = 1;
 	
     setvbuf(stdout, (char *)NULL, _IONBF, 0);//disable stdio out buffer;
 	dev = getenv("KEYPAD_DEV");
