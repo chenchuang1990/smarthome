@@ -320,6 +320,9 @@ extern uint8_t initDone;
 int check_device_timeout(struct device *d)
 {
 	time_t cur_time = time(NULL);
+	/*printf("check_device_timeout:\n");
+	printf("cur_time:%lx\n", cur_time);
+	printf("d->timestamp:%lx\n", d->timestamp);*/
 	if(cur_time - d->timestamp > TIMESTAMPOUT)
 		return 1;
 	else 
@@ -355,7 +358,8 @@ void *send_read_onoff(void *args)
 	list_for_each_safe(pos, n, &gw->head) { 
 		d = list_entry(pos, struct device, list); 
 		if(d && (!device_check_status(d, DEVICE_APP_DEL)) && (!device_check_status(d, DEVICE_LEAVE_NET))) {
-			d->timestamp = time(NULL);
+			//d->timestamp = time(NULL);
+			d->noneedcheck = 1;
 		}
 	}
 
@@ -364,9 +368,9 @@ void *send_read_onoff(void *args)
 			//interval = get_onoff_period();
 			list_for_each_safe(pos, n, &gw->head) { 
 				d = list_entry(pos, struct device, list); 
-				printf("send all ieee:%llx\n", d->ieeeaddr);
+				//printf("send all ieee:%llx\n", d->ieeeaddr);
 				if(d && (!device_check_status(d, DEVICE_APP_DEL)) && 
-					(!device_check_status(d, DEVICE_LEAVE_NET)) && (d->nonedcheck == 0)) {
+					(!device_check_status(d, DEVICE_LEAVE_NET)) && (d->noneedcheck == 0)) {
 					
 					printf("send read cmd ieee:%llx\n", d->ieeeaddr);
 					
@@ -385,7 +389,7 @@ void *send_read_onoff(void *args)
 							if(check_device_timeout(d)) {
 								printf("send_read_onoff:DEVICE_LEAVE_NET\n");
 								//device_set_status(d, DEVICE_LEAVE_NET);
-								d->nonedcheck = 1;
+								d->noneedcheck = 1;
 								continue;
 							}
 							//#endif
@@ -415,12 +419,12 @@ void *send_read_onoff(void *args)
 					//sleep(interval);
 				}
 				else {
-					printf("DEVICE_APP_DEL:%d\n", (d->status & DEVICE_APP_DEL) > 0);
-					printf("DEVICE_LEAVE_NET:%d\n", (d->status & DEVICE_LEAVE_NET) > 0);
-					printf("d->noneedcheck:%d\n", d->nonedcheck);
+					//printf("DEVICE_APP_DEL:%d\n", (d->status & DEVICE_APP_DEL) > 0);
+					//printf("DEVICE_LEAVE_NET:%d\n", (d->status & DEVICE_LEAVE_NET) > 0);
+					//printf("d->noneedcheck:%d\n", d->noneedcheck);
 				}
 			}
-			sleep(5);
+			sleep(3);
 		}
 	}
 	//free(read_report);
