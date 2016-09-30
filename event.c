@@ -554,7 +554,7 @@ extern struct gateway gatewayinstance;
 
 #define seq_after(d, a, b) \
 	(((char)b - (char)a < 0) || \
-	(char)b - (char)a > 64)
+	(char)b - (char)a > 32)
 
 #define min(a,b) a>b?b:a
 

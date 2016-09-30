@@ -1040,7 +1040,7 @@ static uint8_t mtZdoMgmtPermitJoinRspCb(MgmtPermitJoinRspFormat_t *msg)
 	return msg->Status;
 }
 
-void clear_device_state(struct device *d)
+static void clear_device_state(struct device *d)
 {
 	struct list_head *pos, *n;
 	struct endpoint *ep;
@@ -1053,6 +1053,19 @@ void clear_device_state(struct device *d)
 			sqlitedb_update_device_state(d->ieeeaddr, ep->simpledesc.simpledesc.Endpoint, 0);
 		}
 	}
+}
+
+static int ias_zone_device(struct device *d)
+{
+	struct list_head *pos, *n;
+	struct endpoint *ep;
+
+	list_for_each_safe(pos, n, &d->eplisthead) {
+		ep = list_entry(pos, struct endpoint, list);
+		if(ZCL_HA_DEVICEID_IAS_ZONE == ep->simpledesc.simpledesc.DeviceID)
+			return 1;
+	}
+	return 0;
 }
 
 static uint8_t mtZdoEndDeviceAnnceIndCb(EndDeviceAnnceIndFormat_t *msg)
@@ -1161,8 +1174,10 @@ static uint8_t mtZdoEndDeviceAnnceIndCb(EndDeviceAnnceIndFormat_t *msg)
 		sendcmd((unsigned char *)&queryep, ZDO_ACTIVE_EP_REQ);
 	}
 	else if(d && device_check_status(d, DEVICE_ACTIVE)) {
-		printf("report new device\n");
-		report_new_device(d);
+		if(!ias_zone_device(d)) {
+			printf("report new device\n");
+			report_new_device(d);
+		}
 	}
 
 	if(d && !list_empty(&d->eplisthead)) {
