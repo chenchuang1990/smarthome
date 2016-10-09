@@ -335,6 +335,7 @@ void *send_read_onoff(void *args)
 	struct list_head * pos, *n, *ep_pos, *ep_n;
 	struct device *d;
 	struct endpoint *ep;
+	int need_delay = 0;
 	//int interval, 
 	//int i;
 	zclReadCmd_t readcmd; 
@@ -354,7 +355,7 @@ void *send_read_onoff(void *args)
 	read_report->attrList[0].attrID = 0x0000;
 #endif
 	/*init the timestemp of all active device*/
-	sleep(10);
+	//sleep(10);
 	list_for_each_safe(pos, n, &gw->head) { 
 		d = list_entry(pos, struct device, list); 
 		if(d && (!device_check_status(d, DEVICE_APP_DEL)) && (!device_check_status(d, DEVICE_LEAVE_NET))) {
@@ -372,8 +373,8 @@ void *send_read_onoff(void *args)
 				if(d && (!device_check_status(d, DEVICE_APP_DEL)) && 
 					(!device_check_status(d, DEVICE_LEAVE_NET)) && (d->noneedcheck == 0)) {
 					
-					printf("send read cmd ieee:%llx\n", d->ieeeaddr);
-					
+					//printf("send read cmd ieee:%llx\n", d->ieeeaddr);
+					need_delay = 1;
 					//d->timestamp = time(NULL);
 					list_for_each_safe(ep_pos, ep_n, &d->eplisthead) {
 						ep = list_entry(ep_pos, struct endpoint, list);
@@ -424,7 +425,10 @@ void *send_read_onoff(void *args)
 					//printf("d->noneedcheck:%d\n", d->noneedcheck);
 				}
 			}
-			sleep(3);
+			if(need_delay) {
+				sleep(3);
+				need_delay = 0;
+			}
 		}
 	}
 	//free(read_report);
