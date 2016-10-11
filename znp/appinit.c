@@ -1085,7 +1085,7 @@ static uint8_t mtZdoEndDeviceAnnceIndCb(EndDeviceAnnceIndFormat_t *msg)
 		sqlitedb_insert_device_ieee(msg->IEEEAddr, msg->NwkAddr);
 	}
 	
-	d->status &= ~DEVICE_APP_DEL;
+	//d->status &= ~DEVICE_APP_DEL;
 	d->status &= ~DEVICE_LEAVE_NET;
 	sqlitedb_update_device_status(d);
 	//d->noneedcheck = 0;
