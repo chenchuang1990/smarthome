@@ -16,9 +16,10 @@
 #include "zcl_ha.h"
 #include "toolkit.h"
 #include "protocol_cmd_header.h"
+#include "socket.h"
 
 
-#define SEC_KEY_LEN 16 // ???
+#define SEC_KEY_LEN 16 
 void *zcl_mem_alloc( uint16 size ){
 	return malloc(size);
 };

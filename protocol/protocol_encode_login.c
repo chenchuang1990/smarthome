@@ -31,6 +31,7 @@
 unsigned int protocol_encode_login(unsigned char *buf) {
 	struct gateway * gw = getgateway();
 	unsigned char *p = buf;
+	
 	bytebuffer_writebyte(&p,PROTOCOL_START_FLAG);
 	bytebuffer_writeword(&p,0x0000);
 	bytebuffer_writeword(&p,LOGIN);

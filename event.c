@@ -429,7 +429,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 				     break;
 				case READ_ONOFF_CMD:
 					{
-						unsigned char onoff = 0;
+						//unsigned char onoff = 0;
 						struct protocol_cmdtype_read_state onoff_state;
 						struct list_head *pos, *n;
 						struct device *other_dev;
@@ -442,7 +442,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						
 
 						struct device * d = gateway_getdevice(getgateway(), onoff_state.ieee);
-						if(d) {
+						if(d && !(d->status & DEVICE_APP_DEL)) {
 							/*if endpoint number is 0, then set the noneedcheck member of struct device*/
 							if(0 == onoff_state.endpoint) {
 								d->noneedcheck = 1;
@@ -481,7 +481,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 					break;
 				case READ_LEVEL_CMD:
 					{
-						unsigned char result = 1, level = 0;
+						//unsigned char result = 1, level = 0;
 						struct protocol_cmdtype_read_state level_state;
 						struct list_head *pos, *n;
 						struct device *other_dev;
@@ -493,7 +493,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						}*/
 
 						struct device * d = gateway_getdevice(getgateway(), level_state.ieee);
-						if(d) {
+						if(d && !(d->status & DEVICE_APP_DEL)) {
 							/*if endpoint number is 0, then set the noneedcheck member of struct device*/
 							if(0 == level_state.endpoint) {
 								d->noneedcheck = 1;
@@ -541,7 +541,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						bytebuffer_readquadword(&p, &test.ieee);
 						bytebuffer_readbyte(&p, &test.endpoint);
 						printf("serialnum:%d ieee:%llx endpoint:%x\n", test.serialnum, test.ieee, test.endpoint);
-						unsigned char change = 0;
+						//unsigned char change = 0;
 						memset(&CfgReportCmd, 0, sizeof(CfgReportCmd));
 						CfgReportCmd.numAttr = 1;
 						CfgReportCmd.attrList[0].direction = 0;
@@ -761,9 +761,12 @@ void event_recvznp(struct eventhub * hub, int fd){
 				readnonblocking(fd, &req, sizeof(struct zclzoneenrollreq));
 				fprintf(stdout, "********event recv znp enroll ieee %llX \n", req.ieeeaddr);
 				struct device * d = gateway_getdevice(getgateway(), req.ieeeaddr);
-				if(!d  || d->status & DEVICE_APP_DEL) {
+				//if(!d  || d->status & DEVICE_APP_DEL) {
+				if(!d) {
 					return;
 				}
+				d->status &= ~DEVICE_APP_DEL;
+				sqlitedb_update_device_status(d);
 
 				//add the devicename field
 				if(0 == strlen(d->devicename)) {
