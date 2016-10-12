@@ -99,7 +99,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 			unsigned char buf[2048] = {0}; 
 			int serverfd = connlist_getserverfd();
 			if(serverfd != -1){
-				unsigned int buflen = protocol_encode_login(buf); 
+				unsigned int buflen = protocol_encode_login(buf, 1); 
 				print_hex(buf, buflen);
 				sendnonblocking(serverfd, buf, buflen);				
 				login_time = time(NULL);
@@ -110,7 +110,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 		c->timestamp = time(NULL);
 		connection_put(c, buf, buflen); 
 
-		for(;;){ // in case of receive two packets one time.
+		for(;;) { // in case of receive two packets one time.
 			unsigned short messageid = 0;
 			int messagelen = protocol_check(c, &messageid);
 			if(messageid == ILLEGAL || messageid == HALFPACK){
@@ -277,8 +277,16 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 				case APP_LOGIN:
 				     {
 					 	 printf("APP_LOGIN:");
+						 unsigned long long gateway_id;						 
 					     unsigned char sbuf[2048] = {0}; 
-					     unsigned int sbuflen = protocol_encode_login(sbuf); 
+						 int match = 1;
+
+						 protocol_parse_app_login(buffer, messagelen, &gateway_id);
+						 if(getgateway()->gatewayid != gateway_id) {
+						 	match = 0;
+						 }
+						 
+					     unsigned int sbuflen = protocol_encode_login(sbuf, match); 
 
 					     int login_len = sendnonblocking(fd, sbuf, sbuflen);
 						 printf("login_len:%d\n", login_len);

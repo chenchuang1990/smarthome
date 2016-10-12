@@ -21,12 +21,13 @@ void protocol_parse_get_device_status(unsigned char * buf, unsigned short len, s
 //void protocol_parse_get_onoff_state(unsigned char *buf, unsigned short len, struct protocol_cmdtype_get_onoff_state *onoff_state);
 void protocol_parse_read_state_cmd(unsigned char *buf, unsigned short len, struct protocol_cmdtype_read_state *read_state);
 void protocol_parse_login_feedback(unsigned char *buf, unsigned short len, struct protocol_datatype_login_feedback *feedback);
+void protocol_parse_app_login(unsigned char *buf, unsigned short len, unsigned long long *ieeep);
 
 unsigned int protocol_encode_add_del_device(unsigned char * buf, unsigned long long ieeeaddr, unsigned char add);
 struct zclzonechangenotification;
 unsigned int protocol_encode_alarm(unsigned char *buf, struct zclzonechangenotification * notification);
 unsigned int protocol_encode_heart(unsigned char *buf);
-unsigned int protocol_encode_login(unsigned char *buf);
+unsigned int protocol_encode_login(unsigned char *buf, int match);
 unsigned int protocol_encode_arm_feedback(unsigned char * buf, struct protocol_cmdtype_setarm *setarm, unsigned char result);
 unsigned int protocol_encode_add_del_device(unsigned char * buf, unsigned long long ieeeaddr, unsigned char add);
 unsigned int protocol_encode_del_device_feedback(unsigned char * buf, struct protocol_datatype_del_device * del_device,unsigned char  result);
