@@ -756,6 +756,20 @@ void init_devicename(struct device *d)
 	}
 }
 
+static int should_not_report(struct device *d)
+{
+	struct list_head *pos, *n;
+	struct endpoint *ep;
+
+	list_for_each_safe(pos, n, &d->eplisthead) {
+		ep = list_entry(pos, struct endpoint, list);
+		if(ZCL_HA_DEVICEID_IAS_ZONE == ep->simpledesc.simpledesc.DeviceID &&
+			0 == ep->simpledesc.zonetype)
+			return 1;
+	}
+	return 0;
+}
+
 void event_recvznp(struct eventhub * hub, int fd){ 
 	unsigned char buf[128] = {0};
 	unsigned int buflen = 0;
@@ -770,7 +784,8 @@ void event_recvznp(struct eventhub * hub, int fd){
 				fprintf(stdout, "********event recv znp enroll ieee %llX \n", req.ieeeaddr);
 				struct device * d = gateway_getdevice(getgateway(), req.ieeeaddr);
 				//if(!d  || d->status & DEVICE_APP_DEL) {
-				if(!d) {
+				//if(!d) {
+				if(!d || should_not_report(d)) {
 					return;
 				}
 				d->status &= ~DEVICE_APP_DEL;
