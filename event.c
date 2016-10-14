@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <string.h>
+#include <pthread.h>
 
 #include "connection.h"
 #include "protocol.h"
@@ -43,7 +44,9 @@ struct test_header {
 
 extern int g_main_to_znp_write_fd;
 extern struct connection * g_serverconn;
+extern pthread_mutex_t big_mutex;
 time_t login_time;
+
 
 void event_send_warning(struct endpoint * wd_ep, unsigned long long warning_device_ieee, unsigned char cmdid,unsigned char warning_mode);
 
@@ -213,8 +216,12 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						struct device * d = gateway_getdevice(getgateway(), del_device.ieee);
 						if(d){
 							device_set_status(d, DEVICE_APP_DEL);
+							pthread_mutex_lock(&big_mutex);
+							printf("delete lock\n");
 							sqlitedb_delete_device(del_device.ieee);							
 							gateway_deldevice(getgateway(), d);	
+							printf("delete unlock\n");
+							pthread_mutex_unlock(&big_mutex);
 							result = 0;
 						}
 						unsigned char sbuf[128] = {0}; 

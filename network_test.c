@@ -30,6 +30,7 @@
 #define PACKET_SIZE     4096
 
 extern int g_znpwfd;
+extern pthread_mutex_t big_mutex;
 
 struct timeval tvsend,tvrecv;   
 struct sockaddr_in dest_addr,recv_addr;
@@ -367,6 +368,8 @@ void *send_read_onoff(void *args)
 	while(1) {
 		if(initDone) {
 			//interval = get_onoff_period();
+			pthread_mutex_lock(&big_mutex);
+			//printf("[send_read_onoff] lock\n");
 			list_for_each_safe(pos, n, &gw->head) { 
 				d = list_entry(pos, struct device, list); 
 				//printf("send all ieee:%llx\n", d->ieeeaddr);
@@ -425,6 +428,8 @@ void *send_read_onoff(void *args)
 					//printf("d->noneedcheck:%d\n", d->noneedcheck);
 				}
 			}
+			//printf("[send_read_onoff] unlock\n");
+			pthread_mutex_unlock(&big_mutex);
 			if(need_delay) {
 				sleep(3);
 				need_delay = 0;

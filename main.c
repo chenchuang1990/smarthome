@@ -60,6 +60,8 @@
 
 int g_main_to_znp_write_fd = -1;
 
+pthread_mutex_t big_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 int main() 
 {
 	//ceconf_load();
@@ -155,4 +157,5 @@ int main()
 	send_period_request();
 
 	eventhub_start(hub);
+	pthread_mutex_destroy(&big_mutex);
 }
