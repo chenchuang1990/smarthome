@@ -215,7 +215,8 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						protocol_parse_del_device(buffer, messagelen, &del_device);
 						struct device * d = gateway_getdevice(getgateway(), del_device.ieee);
 						if(d){
-							device_set_status(d, DEVICE_APP_DEL);
+							//device_set_status(d, DEVICE_APP_DEL);
+							device_clear_status(d, DEVICE_APP_ADD);
 							pthread_mutex_lock(&big_mutex);
 							printf("delete lock\n");
 							sqlitedb_delete_device(del_device.ieee);							
@@ -457,7 +458,8 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						
 
 						struct device * d = gateway_getdevice(getgateway(), onoff_state.ieee);
-						if(d && !(d->status & DEVICE_APP_DEL)) {
+						//if(d && !(d->status & DEVICE_APP_DEL)) {
+						if(d && (d->status & DEVICE_APP_ADD)) {
 							/*if endpoint number is 0, then set the noneedcheck member of struct device*/
 							if(0 == onoff_state.endpoint) {
 								d->noneedcheck = 1;
@@ -508,7 +510,8 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						}*/
 
 						struct device * d = gateway_getdevice(getgateway(), level_state.ieee);
-						if(d && !(d->status & DEVICE_APP_DEL)) {
+						//if(d && !(d->status & DEVICE_APP_DEL)) {
+						if(d && (d->status & DEVICE_APP_ADD)) {
 							/*if endpoint number is 0, then set the noneedcheck member of struct device*/
 							if(0 == level_state.endpoint) {
 								d->noneedcheck = 1;
@@ -795,8 +798,9 @@ void event_recvznp(struct eventhub * hub, int fd){
 				if(!d || should_not_report(d)) {
 					return;
 				}
-				d->status &= ~DEVICE_APP_DEL;
-				sqlitedb_update_device_status(d);
+				//d->status &= ~DEVICE_APP_DEL;
+				//sqlitedb_update_device_status(d);
+				device_set_status(d, DEVICE_APP_ADD);
 
 				//add the devicename field
 				if(0 == strlen(d->devicename)) {
@@ -815,7 +819,8 @@ void event_recvznp(struct eventhub * hub, int fd){
 				struct zclzonechangenotification req;
 				readnonblocking(fd, &req, sizeof(struct zclzonechangenotification));
 				struct device * d = gateway_getdevice(getgateway(), req.ieeeaddr);
-				if(!d || d->status & DEVICE_APP_DEL){
+				//if(!d || d->status & DEVICE_APP_DEL){
+				if(!d || !(d->status & DEVICE_APP_ADD)) {
 					return;
 				}
 				fprintf(stdout, "********event recv znp notification %llX \n", req.ieeeaddr);
@@ -878,7 +883,8 @@ void event_recvznp(struct eventhub * hub, int fd){
 										warn_mode = SS_IAS_START_WARNING_WARNING_MODE_STOP;
 										break;
 									}
-									if(wd_device && !device_check_status(wd_device, DEVICE_APP_DEL)) {
+									//if(wd_device && !device_check_status(wd_device, DEVICE_APP_DEL)) {
+									if(wd_device && device_check_status(wd_device, DEVICE_APP_ADD)) {
 										printf("wd_device shortaddr is 0x%04x\n", wd_device->shortaddr);
 										event_send_warning(wd_ep, wd_device->ieeeaddr,PROTOCOL_WARNING, warn_mode);
 									}

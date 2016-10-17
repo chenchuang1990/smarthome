@@ -359,7 +359,8 @@ void *send_read_onoff(void *args)
 	//sleep(10);
 	list_for_each_safe(pos, n, &gw->head) { 
 		d = list_entry(pos, struct device, list); 
-		if(d && (!device_check_status(d, DEVICE_APP_DEL)) && (!device_check_status(d, DEVICE_LEAVE_NET))) {
+		//if(d && (!device_check_status(d, DEVICE_APP_DEL)) && (!device_check_status(d, DEVICE_LEAVE_NET))) {
+		if(d && (device_check_status(d, DEVICE_APP_ADD)) && (!device_check_status(d, DEVICE_LEAVE_NET))) {
 			//d->timestamp = time(NULL);
 			d->noneedcheck = 1;
 		}
@@ -373,9 +374,10 @@ void *send_read_onoff(void *args)
 			list_for_each_safe(pos, n, &gw->head) { 
 				d = list_entry(pos, struct device, list); 
 				//printf("send all ieee:%llx\n", d->ieeeaddr);
-				if(d && (!device_check_status(d, DEVICE_APP_DEL)) && 
-					(!device_check_status(d, DEVICE_LEAVE_NET)) && (d->noneedcheck == 0)) {
-					
+				/*if(d && (!device_check_status(d, DEVICE_APP_DEL)) && 
+					(!device_check_status(d, DEVICE_LEAVE_NET)) && (d->noneedcheck == 0)) {*/
+				if(d && device_check_status(d, DEVICE_APP_ADD) && 
+					(!device_check_status(d, DEVICE_LEAVE_NET)) && (d->noneedcheck == 0)) {	
 					//printf("send read cmd ieee:%llx\n", d->ieeeaddr);
 					need_delay = 1;
 					//d->timestamp = time(NULL);

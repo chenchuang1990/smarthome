@@ -168,13 +168,13 @@ void *key_event_process(void *args)
 						else if(1 == t.value) {
 							key_down = 0;
 							if(clear_flag) {
+								printf("clear nv param\n");
+								system("touch /home/root/neednv");
+								system("rm /home/root/gateway.db");																
 								ioctl(led_fd, LED_OFF, LED_W);
 								usleep(500000);
 								ioctl(led_fd, LED_ON, LED_W);
 								usleep(500000);
-								printf("clear nv param\n");
-								system("touch /home/root/neednv");
-								system("rm /home/root/gateway.db");
 								system("reboot");
 							}
 							else {

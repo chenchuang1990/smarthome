@@ -130,7 +130,8 @@ unsigned char device_getepcount(struct device * d){
 int is_device_deleted(unsigned long long ieee)
 {
 	struct device *dev = gateway_getdevice(getgateway(), ieee);
-	if(dev && (!device_check_status(dev, DEVICE_APP_DEL)))
+	//if(dev && (!device_check_status(dev, DEVICE_APP_DEL)))
+	if(dev && device_check_status(dev, DEVICE_APP_ADD))
 		return 0;
 	else
 		return 1;
@@ -361,7 +362,8 @@ unsigned short gateway_get_active_device_count(){
 	struct list_head *pos, *n;
 	list_for_each_safe(pos, n, &gatewayinstance.head){
 		d = list_entry(pos, struct device, list); 
-		if((!device_check_status(d, DEVICE_APP_DEL)) && (!device_check_status(d, DEVICE_LEAVE_NET))){
+		//if((!device_check_status(d, DEVICE_APP_DEL)) && (!device_check_status(d, DEVICE_LEAVE_NET))){
+		if(device_check_status(d, DEVICE_APP_ADD) && (!device_check_status(d, DEVICE_LEAVE_NET))) {
 			active_device_count++;
 		}
 	}

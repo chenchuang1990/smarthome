@@ -316,8 +316,8 @@ int zclss_processincmd_zonestatus_enrollrequest(struct zclincomingmsg * pInMsg){
 	}
 }
 
-int zclss_processincmd_zonestatus_changenotification(struct zclincomingmsg * msg){
-
+int zclss_processincmd_zonestatus_changenotification(struct zclincomingmsg * msg)
+{
 	struct zcl_zone_change_notification_cmd cmd;
 	memset(&cmd, 0, sizeof(struct zcl_zone_change_notification_cmd));
 	cmd.cmdid = ZCLZONECHANGENOTIFICATION;
@@ -594,9 +594,11 @@ int handle_basic_status(struct zclincomingmsg *zclin)
 		cmd.req.ieeeaddr = d->ieeeaddr;
 	}
 	d->timestamp = time(NULL);
-	if(d->status & DEVICE_APP_DEL) {
-		d->status &= ~DEVICE_APP_DEL;
-		sqlitedb_update_device_status(d);
+	//if(d->status & DEVICE_APP_DEL) {
+	if(!(d->status & DEVICE_APP_ADD)) {
+		//d->status &= ~DEVICE_APP_DEL;
+		//sqlitedb_update_device_status(d);
+		device_set_status(d, DEVICE_APP_ADD);
 	}
 
 	//write(g_znpwfd, &cmd, sizeof(struct zcl_basic_status_cmd));
