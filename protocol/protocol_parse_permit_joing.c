@@ -210,5 +210,11 @@ void protocol_parse_login_feedback(unsigned char *buf, unsigned short len, struc
 	bytebuffer_readbyte(&p, &feedback->result);
 }
 
+void protocol_parse_app_login(unsigned char *buf, unsigned short len, unsigned long long *mac)
+{
+	const unsigned char * p = buf;
+	bytebuffer_skipbytes(&p, 5);
+	bytebuffer_readmac(&p, mac);
+}
 
 

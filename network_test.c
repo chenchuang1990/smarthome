@@ -30,6 +30,7 @@
 #define PACKET_SIZE     4096
 
 extern int g_znpwfd;
+extern pthread_mutex_t big_mutex;
 
 struct timeval tvsend,tvrecv;   
 struct sockaddr_in dest_addr,recv_addr;
@@ -358,7 +359,8 @@ void *send_read_onoff(void *args)
 	//sleep(10);
 	list_for_each_safe(pos, n, &gw->head) { 
 		d = list_entry(pos, struct device, list); 
-		if(d && (!device_check_status(d, DEVICE_APP_DEL)) && (!device_check_status(d, DEVICE_LEAVE_NET))) {
+		//if(d && (!device_check_status(d, DEVICE_APP_DEL)) && (!device_check_status(d, DEVICE_LEAVE_NET))) {
+		if(d && (device_check_status(d, DEVICE_APP_ADD)) && (!device_check_status(d, DEVICE_LEAVE_NET))) {
 			//d->timestamp = time(NULL);
 			d->noneedcheck = 1;
 		}
@@ -367,12 +369,15 @@ void *send_read_onoff(void *args)
 	while(1) {
 		if(initDone) {
 			//interval = get_onoff_period();
+			pthread_mutex_lock(&big_mutex);
+			//printf("[send_read_onoff] lock\n");
 			list_for_each_safe(pos, n, &gw->head) { 
 				d = list_entry(pos, struct device, list); 
 				//printf("send all ieee:%llx\n", d->ieeeaddr);
-				if(d && (!device_check_status(d, DEVICE_APP_DEL)) && 
-					(!device_check_status(d, DEVICE_LEAVE_NET)) && (d->noneedcheck == 0)) {
-					
+				/*if(d && (!device_check_status(d, DEVICE_APP_DEL)) && 
+					(!device_check_status(d, DEVICE_LEAVE_NET)) && (d->noneedcheck == 0)) {*/
+				if(d && device_check_status(d, DEVICE_APP_ADD) && 
+					(!device_check_status(d, DEVICE_LEAVE_NET)) && (d->noneedcheck == 0)) {	
 					//printf("send read cmd ieee:%llx\n", d->ieeeaddr);
 					need_delay = 1;
 					//d->timestamp = time(NULL);
@@ -425,6 +430,8 @@ void *send_read_onoff(void *args)
 					//printf("d->noneedcheck:%d\n", d->noneedcheck);
 				}
 			}
+			//printf("[send_read_onoff] unlock\n");
+			pthread_mutex_unlock(&big_mutex);
 			if(need_delay) {
 				sleep(3);
 				need_delay = 0;

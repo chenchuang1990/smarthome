@@ -11,7 +11,7 @@
 
 //#define DSTPATH "/media/mmcblk0p1/srcseq.c"
 
-unsigned long long xlate_seqstr2seqnum(char *str)
+static unsigned long long xlate_seqstr2seqnum(char *str)
 {
 	int i;
 	char *out_ptr = NULL;

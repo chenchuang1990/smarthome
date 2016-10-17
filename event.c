@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <string.h>
+#include <pthread.h>
 
 #include "connection.h"
 #include "protocol.h"
@@ -43,7 +44,9 @@ struct test_header {
 
 extern int g_main_to_znp_write_fd;
 extern struct connection * g_serverconn;
+extern pthread_mutex_t big_mutex;
 time_t login_time;
+
 
 void event_send_warning(struct endpoint * wd_ep, unsigned long long warning_device_ieee, unsigned char cmdid,unsigned char warning_mode);
 
@@ -99,7 +102,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 			unsigned char buf[2048] = {0}; 
 			int serverfd = connlist_getserverfd();
 			if(serverfd != -1){
-				unsigned int buflen = protocol_encode_login(buf); 
+				unsigned int buflen = protocol_encode_login(buf, 1); 
 				print_hex(buf, buflen);
 				sendnonblocking(serverfd, buf, buflen);				
 				login_time = time(NULL);
@@ -110,7 +113,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 		c->timestamp = time(NULL);
 		connection_put(c, buf, buflen); 
 
-		for(;;){ // in case of receive two packets one time.
+		for(;;) { // in case of receive two packets one time.
 			unsigned short messageid = 0;
 			int messagelen = protocol_check(c, &messageid);
 			if(messageid == ILLEGAL || messageid == HALFPACK){
@@ -212,9 +215,14 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						protocol_parse_del_device(buffer, messagelen, &del_device);
 						struct device * d = gateway_getdevice(getgateway(), del_device.ieee);
 						if(d){
-							device_set_status(d, DEVICE_APP_DEL);
+							//device_set_status(d, DEVICE_APP_DEL);
+							device_clear_status(d, DEVICE_APP_ADD);
+							pthread_mutex_lock(&big_mutex);
+							printf("delete lock\n");
 							sqlitedb_delete_device(del_device.ieee);							
 							gateway_deldevice(getgateway(), d);	
+							printf("delete unlock\n");
+							pthread_mutex_unlock(&big_mutex);
 							result = 0;
 						}
 						unsigned char sbuf[128] = {0}; 
@@ -277,8 +285,16 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 				case APP_LOGIN:
 				     {
 					 	 printf("APP_LOGIN:");
+						 unsigned long long gateway_id;						 
 					     unsigned char sbuf[2048] = {0}; 
-					     unsigned int sbuflen = protocol_encode_login(sbuf); 
+						 int match = 1;
+
+						 protocol_parse_app_login(buffer, messagelen, &gateway_id);
+						 if(getgateway()->gatewayid != gateway_id) {
+						 	match = 0;
+						 }
+						 
+					     unsigned int sbuflen = protocol_encode_login(sbuf, match); 
 
 					     int login_len = sendnonblocking(fd, sbuf, sbuflen);
 						 printf("login_len:%d\n", login_len);
@@ -442,7 +458,8 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						
 
 						struct device * d = gateway_getdevice(getgateway(), onoff_state.ieee);
-						if(d && !(d->status & DEVICE_APP_DEL)) {
+						//if(d && !(d->status & DEVICE_APP_DEL)) {
+						if(d && (d->status & DEVICE_APP_ADD)) {
 							/*if endpoint number is 0, then set the noneedcheck member of struct device*/
 							if(0 == onoff_state.endpoint) {
 								d->noneedcheck = 1;
@@ -493,7 +510,8 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						}*/
 
 						struct device * d = gateway_getdevice(getgateway(), level_state.ieee);
-						if(d && !(d->status & DEVICE_APP_DEL)) {
+						//if(d && !(d->status & DEVICE_APP_DEL)) {
+						if(d && (d->status & DEVICE_APP_ADD)) {
 							/*if endpoint number is 0, then set the noneedcheck member of struct device*/
 							if(0 == level_state.endpoint) {
 								d->noneedcheck = 1;
@@ -748,6 +766,20 @@ void init_devicename(struct device *d)
 	}
 }
 
+static int should_not_report(struct device *d)
+{
+	struct list_head *pos, *n;
+	struct endpoint *ep;
+
+	list_for_each_safe(pos, n, &d->eplisthead) {
+		ep = list_entry(pos, struct endpoint, list);
+		if(ZCL_HA_DEVICEID_IAS_ZONE == ep->simpledesc.simpledesc.DeviceID &&
+			0 == ep->simpledesc.zonetype)
+			return 1;
+	}
+	return 0;
+}
+
 void event_recvznp(struct eventhub * hub, int fd){ 
 	unsigned char buf[128] = {0};
 	unsigned int buflen = 0;
@@ -762,11 +794,13 @@ void event_recvznp(struct eventhub * hub, int fd){
 				fprintf(stdout, "********event recv znp enroll ieee %llX \n", req.ieeeaddr);
 				struct device * d = gateway_getdevice(getgateway(), req.ieeeaddr);
 				//if(!d  || d->status & DEVICE_APP_DEL) {
-				if(!d) {
+				//if(!d) {
+				if(!d || should_not_report(d)) {
 					return;
 				}
-				d->status &= ~DEVICE_APP_DEL;
-				sqlitedb_update_device_status(d);
+				//d->status &= ~DEVICE_APP_DEL;
+				//sqlitedb_update_device_status(d);
+				device_set_status(d, DEVICE_APP_ADD);
 
 				//add the devicename field
 				if(0 == strlen(d->devicename)) {
@@ -785,7 +819,8 @@ void event_recvznp(struct eventhub * hub, int fd){
 				struct zclzonechangenotification req;
 				readnonblocking(fd, &req, sizeof(struct zclzonechangenotification));
 				struct device * d = gateway_getdevice(getgateway(), req.ieeeaddr);
-				if(!d || d->status & DEVICE_APP_DEL){
+				//if(!d || d->status & DEVICE_APP_DEL){
+				if(!d || !(d->status & DEVICE_APP_ADD)) {
 					return;
 				}
 				fprintf(stdout, "********event recv znp notification %llX \n", req.ieeeaddr);
@@ -848,7 +883,8 @@ void event_recvznp(struct eventhub * hub, int fd){
 										warn_mode = SS_IAS_START_WARNING_WARNING_MODE_STOP;
 										break;
 									}
-									if(wd_device && !device_check_status(wd_device, DEVICE_APP_DEL)) {
+									//if(wd_device && !device_check_status(wd_device, DEVICE_APP_DEL)) {
+									if(wd_device && device_check_status(wd_device, DEVICE_APP_ADD)) {
 										printf("wd_device shortaddr is 0x%04x\n", wd_device->shortaddr);
 										event_send_warning(wd_ep, wd_device->ieeeaddr,PROTOCOL_WARNING, warn_mode);
 									}
