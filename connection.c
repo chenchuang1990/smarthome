@@ -2,11 +2,13 @@
 #include <stdio.h>
 #include <assert.h>
 #include <unistd.h>
+#include <pthread.h>
 #include "connection.h"
 #include "ceconf.h"
 #include "eventhub.h"
 
 #define MAXBUFLEN 1024
+extern pthread_mutex_t conn_mutex;
 
 struct connection * connection_create(){
 	struct connection * conn = (struct connection*) malloc(sizeof(struct connection));
@@ -112,6 +114,7 @@ void connlist_checkstatus(struct eventhub * hub, long timestamp){
 		if((c->type == CONNSOCKETSERVER || c->type == CONNSOCKETCLIENT) && 
 				timestamp - c->timestamp > ceconf_gettimeout()){
 			eventhub_deregister(hub, c->fd);
+			printf("connect(%d) is timeout\n", c->fd);
 			connection_close(c);
 		}
 	}
@@ -200,8 +203,12 @@ void connrbtree_insert(struct connection *c){
 
 void connrbtree_del(struct connection * c){ 
 	//fprintf(stdout, "del %d %d %x\n", c->fd, c->type, (unsigned int)c);
+	pthread_mutex_lock(&conn_mutex);
+	printf("[connrbtree_del] lock\n");
 	rb_erase(&c->node, &connrbtreeroot);
 	list_del_init(&c->list);
 	freeconnlist_add(c);
+	printf("[connrbtree_del] unlock\n");
+	pthread_mutex_unlock(&conn_mutex);
 	//_connrbtree_dump();
 }

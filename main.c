@@ -54,6 +54,7 @@
 int g_main_to_znp_write_fd = -1;
 
 pthread_mutex_t big_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t conn_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int main() 
 {
@@ -94,11 +95,11 @@ int main()
 	//  create pipe for reconnect to main
 	int rmwfd;
 	struct connection * mrreadconn = createpipe(&rmwfd);
-
+#if 0
 	// create timer
 	struct cetimer * timer = cetimer_create(5, 1, wfd, reconnwfd);
 	cetimer_start(timer);
-
+#endif
 	// create eventhub 
 	struct eventhubconf hubconf;
 	memset(&hubconf, 0, sizeof(struct eventhubconf));
@@ -117,6 +118,10 @@ int main()
 	if( mrreadconn ){
 		eventhub_register(hub, connection_getfd(mrreadconn));
 	}
+	
+	// create timer
+	struct cetimer * timer = cetimer_create(5, 1, wfd, reconnwfd);
+	cetimer_start(timer);
 
 	// create pipe for znp to main
 	int mainrfd, znpwfd;
