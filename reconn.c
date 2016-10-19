@@ -11,6 +11,7 @@
 #include "innercmd.h"
 
 struct connection * g_serverconn = NULL;
+extern pthread_mutex_t conn_mutex;
 
 struct reconn{ 
 	int rfd;
@@ -26,7 +27,7 @@ void event_reconnect(struct eventhub * hub, int wfd){
 		struct connection * serverconn = connectserver();
 		
 		if(serverconn){
-		    eventhub_register(hub,connection_getfd(serverconn)); 
+		    eventhub_register(hub, connection_getfd(serverconn)); 
 			int n = write(wfd, CESEND, 1);
 			if(n <= 0){
 				fprintf(stdout, "%d %s \n ", errno, strerror(errno));
@@ -45,7 +46,11 @@ void * ceconnect(void * args){
 
 		int n = read(rfd, buf, sizeof(buf)); 
 		if(n > 0)
+			pthread_mutex_lock(&conn_mutex);
+			//printf("[ceconnect] lock\n");
 			event_reconnect(hub, wfd);
+			//printf("[ceconnect] unlock\n");
+			pthread_mutex_unlock(&conn_mutex);
 	}
 }
 
