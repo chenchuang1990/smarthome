@@ -80,7 +80,11 @@ void eventhub_start(struct eventhub * hub){
 				   ready for reading (why were we notified then?) */
 				fprintf (stdout, "epoll error %s\n", strerror(errno));
 	 			close (events[i].data.fd);
+				pthread_mutex_lock(&conn_mutex);
+				printf("[unknown event] lock\n");
 				event_close(events[i].data.fd);
+				printf("[unknown event] unlock\n");
+				pthread_mutex_unlock(&conn_mutex);
 				continue;
 			} else if (hub->listenfd == events[i].data.fd) {
 				/* We have a notification on the listening socket, which
@@ -187,7 +191,11 @@ void eventhub_start(struct eventhub * hub){
 						/* Closing the descriptor will make epoll remove it
 						   from the set of descriptors which are monitored. */					
 						eventhub_deregister(hub, events[i].data.fd);
+						pthread_mutex_lock(&conn_mutex);
+						printf("connect abort lock\n");
 						event_close(events[i].data.fd);
+						printf("connect abort ulock\n");
+						pthread_mutex_unlock(&conn_mutex);
 						close(events[i].data.fd);
 					}
 				}
