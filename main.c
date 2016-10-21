@@ -127,7 +127,11 @@ int main()
 	int mainrfd, znpwfd;
 	mainrfd = createpipe2(&znpwfd);
 	make_socket_non_blocking(mainrfd);
+	pthread_mutex_lock(&conn_mutex);
+	printf("[main]znpconnection lock\n");
 	struct connection * znpconnection = freeconnlist_getconn();
+	printf("[main]znpconntion unlock\n");
+	pthread_mutex_unlock(&conn_mutex);
 	if(znpconnection)
 		connection_init(znpconnection, mainrfd, CONNZNP);
 	else {
@@ -150,10 +154,15 @@ int main()
 	network_test_start();
 	if(znpconnection){
 		eventhub_register(hub, connection_getfd(znpconnection));
+		pthread_mutex_lock(&conn_mutex);
+		printf("[main]znpconnection lock\n");
 		connrbtree_insert(znpconnection);
+		printf("[main]znpconnection unlock\n");
+		pthread_mutex_unlock(&conn_mutex);
 	}
 	send_period_request();
 
 	eventhub_start(hub);
 	pthread_mutex_destroy(&big_mutex);
+	pthread_mutex_destroy(&conn_mutex);
 }

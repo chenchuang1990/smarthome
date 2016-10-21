@@ -391,7 +391,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						sendnonblocking(g_main_to_znp_write_fd, &cfg_rpt_cmd, sizeof(struct protocol_cmdtype_config_reporting_cmd));
 					}
 					break;
-			#if 0
+				#if 0
 				case DEVICE_STATUS:
 					{
 					     //struct protocol_cmdtype_get_device_status_cmd get_status_cmd;

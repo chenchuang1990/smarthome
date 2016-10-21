@@ -115,7 +115,11 @@ void connlist_checkstatus(struct eventhub * hub, long timestamp){
 				timestamp - c->timestamp > ceconf_gettimeout()){
 			eventhub_deregister(hub, c->fd);
 			printf("connect(%d) is timeout\n", c->fd);
+			pthread_mutex_lock(&conn_mutex);
+			printf("[connection_close] lock\n");
 			connection_close(c);
+			printf("[connection_close] unlock\n");
+			pthread_mutex_unlock(&conn_mutex);
 		}
 	}
 }
@@ -203,12 +207,12 @@ void connrbtree_insert(struct connection *c){
 
 void connrbtree_del(struct connection * c){ 
 	//fprintf(stdout, "del %d %d %x\n", c->fd, c->type, (unsigned int)c);
-	pthread_mutex_lock(&conn_mutex);
-	printf("[connrbtree_del] lock\n");
+	//pthread_mutex_lock(&conn_mutex);
+	//printf("[connrbtree_del] lock\n");
 	rb_erase(&c->node, &connrbtreeroot);
 	list_del_init(&c->list);
 	freeconnlist_add(c);
-	printf("[connrbtree_del] unlock\n");
-	pthread_mutex_unlock(&conn_mutex);
+	//printf("[connrbtree_del] unlock\n");
+	//pthread_mutex_unlock(&conn_mutex);
 	//_connrbtree_dump();
 }
