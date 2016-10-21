@@ -16,9 +16,10 @@
 #include "zcl_ha.h"
 #include "toolkit.h"
 #include "protocol_cmd_header.h"
+#include "socket.h"
 
 
-#define SEC_KEY_LEN 16 // ???
+#define SEC_KEY_LEN 16 
 void *zcl_mem_alloc( uint16 size ){
 	return malloc(size);
 };
@@ -1006,13 +1007,13 @@ int zcl_proccessincomingmessage(IncomingMsgFormat_t * message){
 			break;
 		case ZCL_CLUSTER_ID_GEN_ON_OFF:
 			handle_onoff_state(&zclmessage);
-			if(d->nonedcheck == 1)
-				d->nonedcheck = 0;
+			if(d->noneedcheck == 1)
+				d->noneedcheck = 0;
 			break;
 		case ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL:
 			handle_levelctl_state(&zclmessage);
-			if(d->nonedcheck == 1)
-				d->nonedcheck = 0;
+			if(d->noneedcheck == 1)
+				d->noneedcheck = 0;
 			//handle_levelctr_rsp(&zclmessage);
 			break;
 		case ZCL_CLUSTER_ID_SS_IAS_WD:

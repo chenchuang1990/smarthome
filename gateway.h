@@ -11,7 +11,8 @@
 #define MAXEPCOUNT 64
 
 #define DEVICE_NULL 0
-#define DEVICE_APP_DEL 1
+//#define DEVICE_APP_DEL 1
+#define DEVICE_APP_ADD	1
 #define DEVICE_SEND_ATTR 2
 #define DEVICE_GET_ATTR 4
 #define DEVICE_SEND_ACTIVEEP 8
@@ -60,7 +61,7 @@ struct device{
 	struct list_head eplisthead;
 	struct list_head list;
 	time_t timestamp;
-	unsigned char nonedcheck;
+	unsigned char noneedcheck;
 };
 
 struct gateway{

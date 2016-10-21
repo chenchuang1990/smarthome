@@ -6,6 +6,7 @@
 #include <netdb.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include "socket.h"
 #include "connection.h"
@@ -13,6 +14,8 @@
 
 
 #define MAXEVENTS 64
+
+extern pthread_mutex_t conn_mutex;
 
 struct eventhub * eventhub_create(struct eventhubconf * conf){ 
 	struct eventhub * hub = (struct eventhub *)malloc(sizeof(struct eventhub));
@@ -77,7 +80,11 @@ void eventhub_start(struct eventhub * hub){
 				   ready for reading (why were we notified then?) */
 				fprintf (stdout, "epoll error %s\n", strerror(errno));
 	 			close (events[i].data.fd);
+				pthread_mutex_lock(&conn_mutex);
+				printf("[unknown event] lock\n");
 				event_close(events[i].data.fd);
+				printf("[unknown event] unlock\n");
+				pthread_mutex_unlock(&conn_mutex);
 				continue;
 			} else if (hub->listenfd == events[i].data.fd) {
 				/* We have a notification on the listening socket, which
@@ -120,7 +127,11 @@ void eventhub_start(struct eventhub * hub){
 					if (ret == -1)
 						abort ();
 					eventhub_register(hub, infd);
+					pthread_mutex_lock(&conn_mutex);
+					printf("[event_accept] lock\n");
 					event_accept(infd);
+					printf("[event_accept] unlock\n");
+					pthread_mutex_unlock(&conn_mutex);
 				}
 				continue;
 			} else {
@@ -130,7 +141,10 @@ void eventhub_start(struct eventhub * hub){
 				   and won't get a notification again for the same
 				   data. */
 				int done = 0;
+				
+				pthread_mutex_lock(&conn_mutex);
 				struct connection * c = connrbtree_getconn(events[i].data.fd);
+				pthread_mutex_unlock(&conn_mutex);
 				if(c) {
 					if(connection_gettype(c) == CONNZNP){ 
 						event_recvznp(hub, events[i].data.fd);
@@ -177,7 +191,11 @@ void eventhub_start(struct eventhub * hub){
 						/* Closing the descriptor will make epoll remove it
 						   from the set of descriptors which are monitored. */					
 						eventhub_deregister(hub, events[i].data.fd);
+						pthread_mutex_lock(&conn_mutex);
+						printf("connect abort lock\n");
 						event_close(events[i].data.fd);
+						printf("connect abort ulock\n");
+						pthread_mutex_unlock(&conn_mutex);
 						close(events[i].data.fd);
 					}
 				}

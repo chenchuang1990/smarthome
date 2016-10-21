@@ -1,4 +1,6 @@
+
 /*
+ ********************************************
                    _ooOoo_
                   o8888888o
                   88" . "88
@@ -20,15 +22,6 @@
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
          佛祖保佑       永无BUG
 */
-//       佛曰:    
-//             写字楼里写字间，写字间里程序员；    
-//             程序人员写程序，又拿程序换酒钱。    
-//             酒醒只在网上坐，酒醉还来网下眠；    
-//             酒醉酒醒日复日，网上网下年复年。    
-//             但愿老死电脑间，不愿鞠躬老板前；    
-//             奔驰宝马贵者趣，公交自行程序员。    
-//             别人笑我忒疯癫，我笑自己命太贱；    
-//             不见满街漂亮妹，哪个归得程序员？
 
 
 #include <string.h>
@@ -59,6 +52,9 @@
 #define DSTPATH "/home/root/dstseq.txt"
 
 int g_main_to_znp_write_fd = -1;
+
+pthread_mutex_t big_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t conn_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int main() 
 {
@@ -99,11 +95,11 @@ int main()
 	//  create pipe for reconnect to main
 	int rmwfd;
 	struct connection * mrreadconn = createpipe(&rmwfd);
-
+#if 0
 	// create timer
 	struct cetimer * timer = cetimer_create(5, 1, wfd, reconnwfd);
 	cetimer_start(timer);
-
+#endif
 	// create eventhub 
 	struct eventhubconf hubconf;
 	memset(&hubconf, 0, sizeof(struct eventhubconf));
@@ -122,12 +118,20 @@ int main()
 	if( mrreadconn ){
 		eventhub_register(hub, connection_getfd(mrreadconn));
 	}
+	
+	// create timer
+	struct cetimer * timer = cetimer_create(5, 1, wfd, reconnwfd);
+	cetimer_start(timer);
 
 	// create pipe for znp to main
 	int mainrfd, znpwfd;
 	mainrfd = createpipe2(&znpwfd);
 	make_socket_non_blocking(mainrfd);
+	pthread_mutex_lock(&conn_mutex);
+	printf("[main]znpconnection lock\n");
 	struct connection * znpconnection = freeconnlist_getconn();
+	printf("[main]znpconntion unlock\n");
+	pthread_mutex_unlock(&conn_mutex);
 	if(znpconnection)
 		connection_init(znpconnection, mainrfd, CONNZNP);
 	else {
@@ -150,9 +154,15 @@ int main()
 	network_test_start();
 	if(znpconnection){
 		eventhub_register(hub, connection_getfd(znpconnection));
+		pthread_mutex_lock(&conn_mutex);
+		printf("[main]znpconnection lock\n");
 		connrbtree_insert(znpconnection);
+		printf("[main]znpconnection unlock\n");
+		pthread_mutex_unlock(&conn_mutex);
 	}
 	send_period_request();
 
 	eventhub_start(hub);
+	pthread_mutex_destroy(&big_mutex);
+	pthread_mutex_destroy(&conn_mutex);
 }
