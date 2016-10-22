@@ -11,6 +11,7 @@
 #include "socket.h"
 #include "connection.h"
 #include "event.h"
+#include "gateway.h"
 
 
 #define MAXEVENTS 64
@@ -169,6 +170,7 @@ void eventhub_start(struct eventhub * hub){
 								   connection. */
 								printf("remote is closed\n");
 								done = 1;
+								c->cur_dev->accesscnt = 0;
 								break;
 							} 
 							if(count > 1) {

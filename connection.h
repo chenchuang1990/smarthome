@@ -20,6 +20,7 @@ struct connection{
 	struct list_head list;
 	struct rb_node node;
 	time_t timestamp;
+	struct device *cur_dev;
 };
 
 void connection_init(struct connection * c, int fd, unsigned char type);

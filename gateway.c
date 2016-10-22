@@ -82,6 +82,7 @@ void device_destroy(struct device * d){
 	list_for_each_safe(pos, n, &d->eplisthead){ 
 		ep = list_entry(pos, struct endpoint, list); 
 		endpoint_destroy(ep);
+		ep = NULL;
 	}
 	list_del(&d->list);
 	free(d);

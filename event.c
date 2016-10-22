@@ -224,6 +224,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 							printf("delete unlock\n");
 							pthread_mutex_unlock(&big_mutex);
 							result = 0;
+							d = NULL;
 						}
 						unsigned char sbuf[128] = {0}; 
 						unsigned int slen = protocol_encode_del_device_feedback(sbuf, &del_device, result);
@@ -470,6 +471,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 							//else if (0xff == onoff_state.endpoint && 1 == d->noneedcheck) {
 							else if (0xff == onoff_state.endpoint) {
 								d->accesscnt++;
+								c->cur_dev = d;
 								d->timestamp = time(NULL);
 								#if 0
 								list_for_each_safe(pos, n, &getgateway()->head){ 
