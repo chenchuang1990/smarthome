@@ -44,7 +44,7 @@
 #include "sequence.h"
 #include "addtion.h"
 
-#define CATCH_SEGFAULT
+//#define CATCH_SEGFAULT
 
 #define APP_TIME 0x0823
 

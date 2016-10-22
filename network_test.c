@@ -373,6 +373,7 @@ void *send_read_onoff(void *args)
 				d = list_entry(pos, struct device, list); 
 				if(d && device_check_status(d, DEVICE_APP_ADD) && 
 					(!device_check_status(d, DEVICE_LEAVE_NET)) && (d->accesscnt > 0)) {	
+					printf("d->accesscnt = %d\n", d->accesscnt);
 					//printf("send read cmd ieee:%llx\n", d->ieeeaddr);
 					need_delay = 1;
 					//d->timestamp = time(NULL);
