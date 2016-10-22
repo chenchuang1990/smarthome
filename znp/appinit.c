@@ -1100,7 +1100,7 @@ static uint8_t mtZdoEndDeviceAnnceIndCb(EndDeviceAnnceIndFormat_t *msg)
 	d->status &= ~DEVICE_LEAVE_NET;
 	sqlitedb_update_device_status(d);
 	//d->noneedcheck = 0;
-	d->noneedcheck = 1;
+	d->accesscnt = 0;
 
 	d->timestamp = time(NULL);
 	
