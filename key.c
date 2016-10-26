@@ -125,9 +125,11 @@ void *key_event_process(void *args)
 	//struct itimerval timer;
 	printf("key_event_process\n");
 	pthread_mutex_lock(&state_lock);
+	printf("key_event_process lock\n");
 	if(devState != DEV_ZB_COORD) {
 		pthread_cond_wait(&state_wait, &state_lock);
 	}
+	printf("key_event_process unlock\n");
 	pthread_mutex_unlock(&state_lock);
 
 	set_led_onoff(LED_Z, LED_ON);

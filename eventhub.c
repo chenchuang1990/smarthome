@@ -171,8 +171,10 @@ void eventhub_start(struct eventhub * hub){
 								printf("remote is closed\n");
 								done = 1;
 								printf("fd is %d\n", c->fd);
-								if(c->cur_dev)
-									c->cur_dev->accesscnt = 0;
+								if(c->cur_dev) {
+									if(c->cur_dev->accesscnt-- <= 0)
+										c->cur_dev->accesscnt = 0;
+								}
 								else
 									printf("cur_dev is NULL\n");
 								break;
