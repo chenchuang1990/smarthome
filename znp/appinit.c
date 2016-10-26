@@ -440,6 +440,7 @@ static uint8_t mtZdoStateChangeIndCb(uint8_t newDevState)
 			consolePrint("Network Started\n");
 			dbg_print(PRINT_LEVEL_INFO,
 					"mtZdoStateChangeIndCb: Started as Zigbee Coordinator\n");
+			set_led_onoff(LED_Z, LED_ON);
 			//sleep(5);
 			#if 0
 			printf("newDevState is %d\n", newDevState);
@@ -2040,7 +2041,7 @@ void appProcess(void * args)
 	status = startNetwork();
 	
 	initDone = 1;
-	set_led_onoff(LED_Z, LED_ON);
+	//set_led_onoff(LED_Z, LED_ON);
 	if (status != -1)
 	{
 		//set_led_onoff(LED_Z, LED_ON);
