@@ -61,7 +61,7 @@ struct device{
 	struct list_head eplisthead;
 	struct list_head list;
 	time_t timestamp;
-	unsigned char noneedcheck;
+	int accesscnt;
 };
 
 struct gateway{

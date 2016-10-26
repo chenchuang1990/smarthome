@@ -44,7 +44,7 @@
 #include "sequence.h"
 #include "addtion.h"
 
-#define CATCH_SEGFAULT
+//#define CATCH_SEGFAULT
 
 #define APP_TIME 0x0823
 
@@ -128,9 +128,9 @@ int main()
 	mainrfd = createpipe2(&znpwfd);
 	make_socket_non_blocking(mainrfd);
 	pthread_mutex_lock(&conn_mutex);
-	printf("[main]znpconnection lock\n");
+	printf("[main]freeconnlist_getconn lock\n");
 	struct connection * znpconnection = freeconnlist_getconn();
-	printf("[main]znpconntion unlock\n");
+	printf("[main]freeconnlist_getconn unlock\n");
 	pthread_mutex_unlock(&conn_mutex);
 	if(znpconnection)
 		connection_init(znpconnection, mainrfd, CONNZNP);
