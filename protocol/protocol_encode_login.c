@@ -52,7 +52,6 @@ unsigned int protocol_encode_login(unsigned char *buf, int match) {
 			d=list_entry(pos, struct device, list);
 			//if((!device_check_status(d, DEVICE_APP_DEL)) && (!device_check_status(d, DEVICE_LEAVE_NET))){
 			if(device_check_status(d, DEVICE_APP_ADD) && (!device_check_status(d, DEVICE_LEAVE_NET))){
-				//d->noneedcheck = 1;
 				bytebuffer_writequadword(&p, d->ieeeaddr);
 				unsigned char devicenamelen = strlen(d->devicename);
 				bytebuffer_writebyte(&p, devicenamelen);

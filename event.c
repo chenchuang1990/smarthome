@@ -221,6 +221,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 							printf("delete lock\n");
 							sqlitedb_delete_device(del_device.ieee);							
 							gateway_deldevice(getgateway(), d);	
+							d = NULL;
 							printf("delete unlock\n");
 							pthread_mutex_unlock(&big_mutex);
 							result = 0;
@@ -447,8 +448,8 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 					{
 						//unsigned char onoff = 0;
 						struct protocol_cmdtype_read_state onoff_state;
-						struct list_head *pos, *n;
-						struct device *other_dev;
+						//struct list_head *pos, *n;
+						//struct device *other_dev;
 						
 						protocol_parse_read_state_cmd(buffer, messagelen, &onoff_state);
 						/*if(is_device_deleted(onoff_state.onoff_state.ieee)) {
@@ -462,18 +463,25 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						if(d && (d->status & DEVICE_APP_ADD)) {
 							/*if endpoint number is 0, then set the noneedcheck member of struct device*/
 							if(0 == onoff_state.endpoint) {
-								d->noneedcheck = 1;
+								if(d->accesscnt-- <= 0)
+									d->accesscnt = 0;
+								printf("exit count:%d\n", d->accesscnt);
 								break;
 							}
-							else if (0xff == onoff_state.endpoint && 1 == d->noneedcheck) {
-								d->noneedcheck= 0;
+							//else if (0xff == onoff_state.endpoint && 1 == d->noneedcheck) {
+							else if (0xff == onoff_state.endpoint) {
+								d->accesscnt++;
+								printf("enter count:%d\n", d->accesscnt);
+								c->cur_dev = d;
 								d->timestamp = time(NULL);
+								#if 0
 								list_for_each_safe(pos, n, &getgateway()->head){ 
 									other_dev = list_entry(pos, struct device, list); 
 									if(other_dev->noneedcheck == 0 && other_dev->ieeeaddr != d->ieeeaddr){
 										other_dev->noneedcheck = 1;
 									}
 								}
+								#endif
 							}
 							#if 0
 							struct endpoint *ep = device_get_endpoint(d, onoff_state.endpoint);					
@@ -500,8 +508,8 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 					{
 						//unsigned char result = 1, level = 0;
 						struct protocol_cmdtype_read_state level_state;
-						struct list_head *pos, *n;
-						struct device *other_dev;
+						//struct list_head *pos, *n;
+						//struct device *other_dev;
 						
 						protocol_parse_read_state_cmd(buffer, messagelen, &level_state);
 						/*if(is_device_deleted(onoff_state.onoff_state.ieee)) {
@@ -514,18 +522,23 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						if(d && (d->status & DEVICE_APP_ADD)) {
 							/*if endpoint number is 0, then set the noneedcheck member of struct device*/
 							if(0 == level_state.endpoint) {
-								d->noneedcheck = 1;
+								if(d->accesscnt-- <= 0)
+									d->accesscnt = 0;
+								printf("exit count:%d\n", d->accesscnt);
 								break;
 							}
-							else if (0xff == level_state.endpoint && 1 == d->noneedcheck) {
-								d->noneedcheck= 0;
+							else if (0xff == level_state.endpoint) {
+								d->accesscnt++;
+								printf("enter count:%d\n", d->accesscnt);
 								d->timestamp = time(NULL);
+								#if 0
 								list_for_each_safe(pos, n, &getgateway()->head){ 
 									other_dev = list_entry(pos, struct device, list); 
 									if(other_dev->noneedcheck == 0 && other_dev->ieeeaddr != d->ieeeaddr){
 										other_dev->noneedcheck = 1;
 									}
 								}
+								#endif
 							}
 							#if 0
 							struct endpoint *ep = device_get_endpoint(d, level_state.endpoint);					

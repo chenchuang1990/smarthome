@@ -123,16 +123,20 @@ void *key_event_process(void *args)
 	PermitJoiningReqFormat_t request;
 	//struct sigaction sa;
 	//struct itimerval timer;
+	#if 0
 	printf("key_event_process\n");
 	pthread_mutex_lock(&state_lock);
+	printf("key_event_process lock\n");
 	if(devState != DEV_ZB_COORD) {
 		pthread_cond_wait(&state_wait, &state_lock);
 	}
+	printf("key_event_process unlock\n");
 	pthread_mutex_unlock(&state_lock);
 
 	set_led_onoff(LED_Z, LED_ON);
 	initDone = 1;
-	
+	#endif
+
     setvbuf(stdout, (char *)NULL, _IONBF, 0);//disable stdio out buffer;
 	dev = getenv("KEYPAD_DEV");
     
@@ -151,65 +155,68 @@ void *key_event_process(void *args)
 #endif	
 	while(1)
 	{	
-        if(read(keys_fd,&t,sizeof(t))==sizeof(t)) {
-		    if((t.type==EV_KEY) && (t.value==0 || t.value==1))
-			{
-				switch(t.code)
+		if(initDone) {
+	        if(read(keys_fd,&t,sizeof(t))==sizeof(t)) {
+			    if((t.type==EV_KEY) && (t.value==0 || t.value==1))
 				{
-			    	case 257:
-			    		printf("key257 %s\n",(t.value)?"Released":"Pressed");
-			    	break;
-			    	
-			    	case 258:
-			    		printf("key258 %s\n",(t.value)?"Released":"Pressed");
-						if(0 == t.value) {
-							key_down = 1;
-						}
-						else if(1 == t.value) {
-							key_down = 0;
-							if(clear_flag) {
-								printf("clear nv param\n");
-								system("touch /home/root/neednv");
-								system("rm /home/root/gateway.db");																
-								ioctl(led_fd, LED_OFF, LED_W);
-								usleep(500000);
-								ioctl(led_fd, LED_ON, LED_W);
-								usleep(500000);
-								system("reboot");
+					switch(t.code)
+					{
+				    	case 257:
+				    		printf("key257 %s\n",(t.value)?"Released":"Pressed");
+				    	break;
+				    	
+				    	case 258:
+				    		printf("key258 %s\n",(t.value)?"Released":"Pressed");
+							if(0 == t.value) {
+								key_down = 1;
 							}
-							else {
-								printf("start_led_timer\n");
-								start_led_timer(PERMIT_JOINING_DURATION);
+							else if(1 == t.value) {
+								key_down = 0;
+								if(clear_flag) {
+									printf("~~~~~clear nv param~~~~~\n");
+									system("touch /home/root/neednv");
+									system("rm /home/root/gateway.db");	
+									system("sync");
+									ioctl(led_fd, LED_OFF, LED_W);
+									usleep(500000);
+									ioctl(led_fd, LED_ON, LED_W);
+									usleep(500000);
+									system("reboot");
+								}
+								else {
+									printf("start_led_timer\n");
+									start_led_timer(PERMIT_JOINING_DURATION);
+									request.Timeout = PERMIT_JOINING_DURATION; //allowed joining whthin 60s
+									sendcmd((unsigned char *)&request, ZB_PERMIT_JOINING_REQ);
+								}
+							}
+							#if 0
+							if(1 == t.value) {
+								set_led_cnt(PERMIT_JOINING_DURATION);
+								set_led_onoff(LED_set, LED_ON);							
 								request.Timeout = PERMIT_JOINING_DURATION; //allowed joining whthin 60s
 								sendcmd((unsigned char *)&request, ZB_PERMIT_JOINING_REQ);
 							}
-						}
-						#if 0
-						if(1 == t.value) {
-							set_led_cnt(PERMIT_JOINING_DURATION);
-							set_led_onoff(LED_set, LED_ON);							
-							request.Timeout = PERMIT_JOINING_DURATION; //allowed joining whthin 60s
-							sendcmd((unsigned char *)&request, ZB_PERMIT_JOINING_REQ);
-						}
-						#endif
-							
-			    	break;
-			    	
-			    	case 259:
-			    		printf("key259 %s\n",(t.value)?"Released":"Pressed");
-			    	break;
-			    	
-			    	case 260:
-			    		printf("key260 %s\n",(t.value)?"Released":"Pressed");
-			    	break;
+							#endif
+								
+				    	break;
+				    	
+				    	case 259:
+				    		printf("key259 %s\n",(t.value)?"Released":"Pressed");
+				    	break;
+				    	
+				    	case 260:
+				    		printf("key260 %s\n",(t.value)?"Released":"Pressed");
+				    	break;
 
-					case 261:
-						printf("key261 %s\n",(t.value)?"Released":"Pressed");
-					break;
-			    	
-			    	default:
-			    		break;
-			    }
+						case 261:
+							printf("key261 %s\n",(t.value)?"Released":"Pressed");
+						break;
+				    	
+				    	default:
+				    		break;
+				    }
+				}
 			}
 		}
 	}	

@@ -392,7 +392,6 @@ static uint8_t mtSysSetTxPowerSrspCb(SetTxPowerSrspFormat_t *msg)
  */
 static uint8_t mtZdoStateChangeIndCb(uint8_t newDevState)
 {
-
 	switch ((devStates_t) newDevState)
 	{
 		case DEV_HOLD:
@@ -441,13 +440,16 @@ static uint8_t mtZdoStateChangeIndCb(uint8_t newDevState)
 			consolePrint("Network Started\n");
 			dbg_print(PRINT_LEVEL_INFO,
 					"mtZdoStateChangeIndCb: Started as Zigbee Coordinator\n");
+			set_led_onoff(LED_Z, LED_ON);
 			//sleep(5);
+			#if 0
 			printf("newDevState is %d\n", newDevState);
 			pthread_mutex_lock(&state_lock);
 			printf("pthread_cond_signal...\n");
 			pthread_cond_signal(&state_wait);
 			printf("pthread_cond_signal end\n");
 			pthread_mutex_unlock(&state_lock);
+			#endif
 			break;
 		case DEV_NWK_ORPHAN:
 			consolePrint("Network Orphaned\n");
@@ -1100,7 +1102,7 @@ static uint8_t mtZdoEndDeviceAnnceIndCb(EndDeviceAnnceIndFormat_t *msg)
 	d->status &= ~DEVICE_LEAVE_NET;
 	sqlitedb_update_device_status(d);
 	//d->noneedcheck = 0;
-	d->noneedcheck = 1;
+	d->accesscnt = 0;
 
 	d->timestamp = time(NULL);
 	
@@ -2037,6 +2039,9 @@ void appProcess(void * args)
 	gDstEndPoint = 1;
 
 	status = startNetwork();
+	
+	initDone = 1;
+	//set_led_onoff(LED_Z, LED_ON);
 	if (status != -1)
 	{
 		//set_led_onoff(LED_Z, LED_ON);
