@@ -53,7 +53,8 @@ void event_send_warning(struct endpoint * wd_ep, unsigned long long warning_devi
 void event_accept(int fd){
 	struct connection * c = freeconnlist_getconn();
 	if(c) {
-		connection_init(c, fd, CONNSOCKETCLIENT);
+		//connection_init(c, fd, CONNSOCKETCLIENT);
+		connection_init(c, fd, CONNFREE);
 		connrbtree_insert(c);
 	}
 }
@@ -109,7 +110,10 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 				printf("[event_recvmsg]login_time:%lx\n", login_time);
 			}
 		}
-	} else if(c && (connection_gettype(c) == CONNSOCKETCLIENT || connection_gettype(c) == CONNSOCKETSERVER)){ 
+	}
+	else if(c && (connection_gettype(c) == CONNSOCKETCLIENT || 
+					connection_gettype(c) == CONNSOCKETSERVER || 
+					connection_gettype(c) == CONNFREE)){ 
 		c->timestamp = time(NULL);
 		connection_put(c, buf, buflen); 
 
@@ -300,7 +304,8 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 					     int login_len = sendnonblocking(fd, sbuf, sbuflen);
 						 printf("login_len:%d\n", login_len);
 						 print_hex(sbuf, sbuflen);
-						 login_time = time(NULL);						 
+						 login_time = time(NULL);
+						 c->type = CONNSOCKETCLIENT;
 				     }
 					 break;
 				case DEVICE_SETARM:
