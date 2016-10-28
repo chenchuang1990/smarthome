@@ -64,6 +64,7 @@ int main()
 	#ifdef CATCH_SEGFAULT
 	sigaction_init();
 	#endif
+	//sigpipe_ignore();
 	check_usb_function();
 	sqlitedb_table_build(DBPATH);
 	

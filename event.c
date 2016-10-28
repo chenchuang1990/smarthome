@@ -950,7 +950,7 @@ void event_recvznp(struct eventhub * hub, int fd){
 				readnonblocking(fd, &readonoff_rsp, sizeof(readonoff_rsp));
 				
 				buflen = protocol_encode_readonoff_response(buf, &readonoff_rsp);
-				sqlitedb_update_device_state(readonoff_rsp.ieeeaddr, readonoff_rsp.endpoint, readonoff_rsp.state);
+				//sqlitedb_update_device_state(readonoff_rsp.ieeeaddr, readonoff_rsp.endpoint, readonoff_rsp.state);
 				broadcast(buf, buflen);				
 			}	
 			break;

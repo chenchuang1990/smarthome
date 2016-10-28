@@ -97,7 +97,9 @@ void eventhub_start(struct eventhub * hub){
 					char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
 
 					in_len = sizeof(in_addr);
+					printf("=====accept start=====\n");
 					infd = accept (hub->listenfd, &in_addr, &in_len);
+					printf("=====accept infd:%d=====\n", infd);
 					if (infd == -1) {
 						if ((errno == EAGAIN) ||
 						    (errno == EWOULDBLOCK)) {

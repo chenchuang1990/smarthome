@@ -62,6 +62,7 @@ struct device{
 	struct list_head list;
 	time_t timestamp;
 	int accesscnt;
+	int record;
 };
 
 struct gateway{
