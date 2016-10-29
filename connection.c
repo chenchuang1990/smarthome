@@ -97,12 +97,18 @@ struct list_head * connlist_get(){
 
 int connlist_check(unsigned char conntype){ 
 	struct list_head * pos, *n;
+	pthread_mutex_lock(&conn_mutex);
+	printf("[connlist_check] lock\n");
 	list_for_each_safe(pos, n, &connlisthead){
 		struct connection * c = list_entry(pos, struct connection, list);
 		if(c->type == conntype){
+			printf("[connlist_check] unlock\n");
+			pthread_mutex_unlock(&conn_mutex);
 			return 1;
 		}
 	}
+	printf("[connlist_check] unlock\n");
+	pthread_mutex_unlock(&conn_mutex);
 
 	return 0;
 }

@@ -33,6 +33,7 @@ void checkstatus(int i){
 	if(t%60==0){
 		sendnonblocking(s_timer->wfd, HEARTBEAT, 1);
 	}
+	printf("[checkstatus]\n");
 	/*if(s_timer->ledwfd > 0) {
 		sendnonblocking(s_timer->ledwfd, LEDCHECK, 1);
 	}*/

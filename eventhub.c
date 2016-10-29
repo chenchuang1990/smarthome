@@ -71,9 +71,10 @@ void eventhub_start(struct eventhub * hub){
 	struct epoll_event * events = hub->events;
 	for(;;){
 		int n, i;
-
+		printf("^^^^^^[main thread] start^^^^^\n");
 		n = epoll_wait (hub->epollfd, events, MAXEVENTS, -1);
-		for (i = 0; i < n; i++) {
+		printf("receive n:%d\n", n);
+		for(i = 0; i < n; i++) {
 			if ((events[i].events & EPOLLERR) ||
 			    (events[i].events & EPOLLHUP) ||
 			    (!(events[i].events & EPOLLIN))) {
@@ -146,7 +147,9 @@ void eventhub_start(struct eventhub * hub){
 				int done = 0;
 				
 				pthread_mutex_lock(&conn_mutex);
+				printf("[eventhub_start] conn_mutex lock\n");
 				struct connection * c = connrbtree_getconn(events[i].data.fd);
+				printf("[eventhub_start] conn_mutex unlock\n");
 				pthread_mutex_unlock(&conn_mutex);
 				if(c) {
 					if(connection_gettype(c) == CONNZNP){ 
@@ -181,7 +184,7 @@ void eventhub_start(struct eventhub * hub){
 									printf("cur_dev is NULL\n");
 								break;
 							} 
-							if(count > 1) {
+							if(count > 0) {
 								printf("[eventhub_start] count: %d, receive:\n", count);
 								int cur;
 								for(cur = 0; cur < count; cur++)
@@ -209,7 +212,10 @@ void eventhub_start(struct eventhub * hub){
 						close(events[i].data.fd);
 					}
 				}
+				else
+					printf("c is NULL\n");
 			}
 		}
+		printf("^^^^^^[main thread] end^^^^^\n");
 	}
 }

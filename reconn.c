@@ -22,7 +22,8 @@ struct reconn{
 };
 
 void event_reconnect(struct eventhub * hub, int wfd){
-	if(!connlist_check(CONNSOCKETSERVER)){
+	printf("[event_reconnect] connlist_check...\n");
+	if(!connlist_check(CONNSOCKETSERVER)) {
 	//	fprintf(stdout, "errno %d %s %s\n", errno, strerror(errno), __FUNCTION__);
 		struct connection * serverconn = connectserver();
 		
@@ -46,11 +47,11 @@ void * ceconnect(void * args){
 
 		int n = read(rfd, buf, sizeof(buf)); 
 		if(n > 0)
-			pthread_mutex_lock(&conn_mutex);
-			//printf("[ceconnect] lock\n");
+			//pthread_mutex_lock(&conn_mutex);
+			//printf("######[ceconnect] lock#####\n");
 			event_reconnect(hub, wfd);
-			//printf("[ceconnect] unlock\n");
-			pthread_mutex_unlock(&conn_mutex);
+			//printf("######[ceconnect] unlock#####\n");
+			//pthread_mutex_unlock(&conn_mutex);
 	}
 }
 
