@@ -271,6 +271,7 @@ void *network_test_task(void *args)
 	//static int on_edge = 0;
 	
 	while(1) {
+		printf("+++++++[network_test_task]++++++++\n");
 		is_ok = NetIsOk();
 		//fprintf(stdout, "network is %s\n", is_ok ? "ok" : "wrong");
 		if(is_ok > 0) {

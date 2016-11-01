@@ -41,4 +41,3 @@ void sigaction_init(void)
 	sigaction(SIGSEGV, &sa_segv, &sa_old);
 }
 
-

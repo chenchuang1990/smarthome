@@ -13,11 +13,14 @@
 #include <assert.h>
 #include <time.h>
 #include <errno.h>
+#include <pthread.h>
 #include "connection.h"
 #include "ceconf.h"
 #include "toolkit.h"
 
 #define _USE_DNS 
+
+extern pthread_mutex_t conn_mutex;
 
 int
 make_socket_non_blocking (int sfd) {
@@ -85,7 +88,7 @@ int openclient(char *addr, char *port)
 	typedef struct sockaddr SA;
 	int sockfd;
 	struct sockaddr_in servaddr;
-
+printf("[openclient] socket...\n");
 	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		fprintf(stdout,"fail to connection to server\n");
 		return -1;
@@ -101,7 +104,7 @@ int openclient(char *addr, char *port)
 	char tempbuf[1024];
 	
 	sprintf(hostname, "%s", addr);
- 
+ printf("[openclient] gethostbyname_r...\n");
 	ret = gethostbyname_r(hostname, &hostinfo, tempbuf, sizeof(tempbuf), &phost, &h_errno);
  	if((0 == ret) && phost)		
 		bcopy((char*)phost->h_addr, (char*)&servaddr.sin_addr, phost->h_length);	
@@ -113,6 +116,7 @@ int openclient(char *addr, char *port)
 	servaddr.sin_addr.s_addr = inet_addr(addr);
 #endif
 	servaddr.sin_port = htons(atoi(port));
+	printf("[openclient] connect...\n");
 
 	if (connect(sockfd, (SA *)&servaddr, sizeof(servaddr)) < 0) {
 		fprintf(stdout, "fail to connect\n");
@@ -120,6 +124,7 @@ int openclient(char *addr, char *port)
 
 		return -1;
 	}
+	printf("[openclient] make_socket_non_blocking...\n");
 
 	make_socket_non_blocking(sockfd);
 
@@ -130,6 +135,8 @@ struct connection * connectserver(){
 	int fd = openclient(ceconf_getserveraddr(), ceconf_getserverport());
 	struct connection * serverconn = NULL;
 	if(fd != -1){
+		pthread_mutex_lock(&conn_mutex);
+		printf("[connectserver] lock\n");
 		serverconn = freeconnlist_getconn();
 		if(serverconn) {
 			connection_init(serverconn, fd, CONNSOCKETSERVER);
@@ -137,6 +144,9 @@ struct connection * connectserver(){
 		}
 		else
 			printf("connectserver::serverconn is NULL\n");
+		
+		printf("[connectserver] unlock\n");
+		pthread_mutex_unlock(&conn_mutex);
 	}
 
 	return serverconn;

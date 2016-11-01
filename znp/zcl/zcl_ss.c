@@ -434,6 +434,7 @@ int zcl_pross_onoff_response(struct zclincomingmsg *msg)
 	cmd.req.status= msg->data[1];
 	struct device * d = gateway_getdevice_shortaddr(msg->message->SrcAddr);
 	if(d){
+		//d->record = d->activeep.ActiveEPCount;
 		struct endpoint *ep = gateway_get_endpoint(d->ieeeaddr, msg->message->SrcEndpoint);
 		if(ep) {
 			cmd.req.ieeeaddr = d->ieeeaddr;
@@ -464,9 +465,21 @@ int zcl_pross_read_onoff_rsp(struct zclincomingmsg *msg)
 	cmd.req.serialnum = msg->zclframehdr.transseqnum;
 	
 	struct endpoint *ep = gateway_get_endpoint(d->ieeeaddr, msg->message->SrcEndpoint);
-	if(ep && (ep->simpledesc.device_state != cmd.req.state)) {
-		write(g_znpwfd, &cmd, sizeof(struct zcl_read_onoff_rsp_cmd));
-		ep->simpledesc.device_state = cmd.req.state;
+	if(ep) {
+		if(ep->simpledesc.device_state != cmd.req.state) {
+			ep->simpledesc.device_state = cmd.req.state;
+			write(g_znpwfd, &cmd, sizeof(struct zcl_read_onoff_rsp_cmd));
+			sqlitedb_update_device_state(cmd.req.ieeeaddr, cmd.req.endpoint, cmd.req.state);
+			if(d->record > 0) {
+				d->record--;
+				printf("d->record:%d\n", d->record);
+			}
+		}
+		else if(d->record > 0) {
+			write(g_znpwfd, &cmd, sizeof(struct zcl_read_onoff_rsp_cmd));
+			d->record--;
+			printf("d->record:%d\n", d->record);
+		}
 	}
 	
 	return 0;

@@ -26,13 +26,16 @@ struct cetimer{
 
 static struct cetimer * s_timer = NULL;
 
-void checkstatus(int i){ 
-	sendnonblocking(s_timer->wfd, CECHECK, 1);
-	sendnonblocking(s_timer->reconnwfd, CERECONN, 1);
+void checkstatus(int i){
 	time_t t = time(NULL);
+	if(t%70==0)
+		sendnonblocking(s_timer->wfd, CECHECK, 1);
+	if(t&80==0)
+		sendnonblocking(s_timer->reconnwfd, CERECONN, 1);
 	if(t%60==0){
 		sendnonblocking(s_timer->wfd, HEARTBEAT, 1);
 	}
+	//printf("[checkstatus]\n");
 	/*if(s_timer->ledwfd > 0) {
 		sendnonblocking(s_timer->ledwfd, LEDCHECK, 1);
 	}*/

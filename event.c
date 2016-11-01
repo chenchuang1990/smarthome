@@ -53,7 +53,8 @@ void event_send_warning(struct endpoint * wd_ep, unsigned long long warning_devi
 void event_accept(int fd){
 	struct connection * c = freeconnlist_getconn();
 	if(c) {
-		connection_init(c, fd, CONNSOCKETCLIENT);
+		//connection_init(c, fd, CONNSOCKETCLIENT);
+		connection_init(c, fd, CONNFREE);
 		connrbtree_insert(c);
 	}
 }
@@ -89,16 +90,19 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 	struct connection * c = connrbtree_getconn(fd);
 	if(c && connection_gettype(c) == CONNSOCKETCMD) { 
 		if( _check_command(buf, buflen, CECHECK[0])){ //maybe "C" connect "B"
+			printf("[CONNSOCKETCMD]\n");
 			time_t t = time(NULL);
 			connlist_checkstatus(hub, t);
 		}
 		if( _check_command(buf, buflen, HEARTBEAT[0])){
+			printf("[HEARTBEAT]\n");
 			unsigned char heart_buf[255];
 			unsigned int hbuflen;
 			hbuflen = protocol_encode_heart(heart_buf);
 			broadcast(heart_buf, hbuflen);
 		}
 		if( _check_command(buf, buflen, CESEND[0])){
+			printf("[CESEND]\n");
 			unsigned char buf[2048] = {0}; 
 			int serverfd = connlist_getserverfd();
 			if(serverfd != -1){
@@ -109,7 +113,10 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 				printf("[event_recvmsg]login_time:%lx\n", login_time);
 			}
 		}
-	} else if(c && (connection_gettype(c) == CONNSOCKETCLIENT || connection_gettype(c) == CONNSOCKETSERVER)){ 
+	}
+	else if(c && (connection_gettype(c) == CONNSOCKETCLIENT || 
+					connection_gettype(c) == CONNSOCKETSERVER || 
+					connection_gettype(c) == CONNFREE)){ 
 		c->timestamp = time(NULL);
 		connection_put(c, buf, buflen); 
 
@@ -300,7 +307,8 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 					     int login_len = sendnonblocking(fd, sbuf, sbuflen);
 						 printf("login_len:%d\n", login_len);
 						 print_hex(sbuf, sbuflen);
-						 login_time = time(NULL);						 
+						 login_time = time(NULL);
+						 c->type = CONNSOCKETCLIENT;
 				     }
 					 break;
 				case DEVICE_SETARM:
@@ -462,9 +470,10 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						//if(d && !(d->status & DEVICE_APP_DEL)) {
 						if(d && (d->status & DEVICE_APP_ADD)) {
 							/*if endpoint number is 0, then set the noneedcheck member of struct device*/
-							if(0 == onoff_state.endpoint) {
+                            if(0 == onoff_state.endpoint) {
 								if(d->accesscnt-- <= 0)
 									d->accesscnt = 0;
+                                c->cur_dev = NULL;
 								printf("exit count:%d\n", d->accesscnt);
 								break;
 							}
@@ -473,6 +482,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 								d->accesscnt++;
 								printf("enter count:%d\n", d->accesscnt);
 								c->cur_dev = d;
+								d->record = d->activeep.ActiveEPCount;
 								d->timestamp = time(NULL);
 								#if 0
 								list_for_each_safe(pos, n, &getgateway()->head){ 
@@ -945,7 +955,7 @@ void event_recvznp(struct eventhub * hub, int fd){
 				readnonblocking(fd, &readonoff_rsp, sizeof(readonoff_rsp));
 				
 				buflen = protocol_encode_readonoff_response(buf, &readonoff_rsp);
-				sqlitedb_update_device_state(readonoff_rsp.ieeeaddr, readonoff_rsp.endpoint, readonoff_rsp.state);
+				//sqlitedb_update_device_state(readonoff_rsp.ieeeaddr, readonoff_rsp.endpoint, readonoff_rsp.state);
 				broadcast(buf, buflen);				
 			}	
 			break;
