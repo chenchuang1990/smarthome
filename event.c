@@ -90,16 +90,19 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 	struct connection * c = connrbtree_getconn(fd);
 	if(c && connection_gettype(c) == CONNSOCKETCMD) { 
 		if( _check_command(buf, buflen, CECHECK[0])){ //maybe "C" connect "B"
+			printf("[CONNSOCKETCMD]\n");
 			time_t t = time(NULL);
 			connlist_checkstatus(hub, t);
 		}
 		if( _check_command(buf, buflen, HEARTBEAT[0])){
+			printf("[HEARTBEAT]\n");
 			unsigned char heart_buf[255];
 			unsigned int hbuflen;
 			hbuflen = protocol_encode_heart(heart_buf);
 			broadcast(heart_buf, hbuflen);
 		}
 		if( _check_command(buf, buflen, CESEND[0])){
+			printf("[CESEND]\n");
 			unsigned char buf[2048] = {0}; 
 			int serverfd = connlist_getserverfd();
 			if(serverfd != -1){
@@ -467,9 +470,10 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						//if(d && !(d->status & DEVICE_APP_DEL)) {
 						if(d && (d->status & DEVICE_APP_ADD)) {
 							/*if endpoint number is 0, then set the noneedcheck member of struct device*/
-							if(0 == onoff_state.endpoint) {
+                            if(0 == onoff_state.endpoint) {
 								if(d->accesscnt-- <= 0)
 									d->accesscnt = 0;
+                                c->cur_dev = NULL;
 								printf("exit count:%d\n", d->accesscnt);
 								break;
 							}
@@ -478,6 +482,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 								d->accesscnt++;
 								printf("enter count:%d\n", d->accesscnt);
 								c->cur_dev = d;
+								d->record = d->activeep.ActiveEPCount;
 								d->timestamp = time(NULL);
 								#if 0
 								list_for_each_safe(pos, n, &getgateway()->head){ 

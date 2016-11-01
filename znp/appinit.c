@@ -2069,6 +2069,7 @@ void appProcess(void * args)
 	for(;;){ 
 		printf("$$$$$$[appProcess] start$$$$$\n");
 		read(znprfd, &commandtype, sizeof(int));
+		printf("get it!\n");
 		switch(commandtype){
 			case PROTOCOL_IDENTIFY:
 				{

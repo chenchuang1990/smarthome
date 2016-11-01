@@ -71,9 +71,9 @@ void eventhub_start(struct eventhub * hub){
 	struct epoll_event * events = hub->events;
 	for(;;){
 		int n, i;
-		printf("^^^^^^[main thread] start^^^^^\n");
+		//printf("^^^^^^[main thread] start^^^^^\n");
 		n = epoll_wait (hub->epollfd, events, MAXEVENTS, -1);
-		printf("receive n:%d\n", n);
+		//printf("receive n:%d\n", n);
 		for(i = 0; i < n; i++) {
 			if ((events[i].events & EPOLLERR) ||
 			    (events[i].events & EPOLLHUP) ||
@@ -216,6 +216,6 @@ void eventhub_start(struct eventhub * hub){
 					printf("c is NULL\n");
 			}
 		}
-		printf("^^^^^^[main thread] end^^^^^\n");
+		//printf("^^^^^^[main thread] end^^^^^\n");
 	}
 }
