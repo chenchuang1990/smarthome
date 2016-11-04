@@ -75,6 +75,7 @@ create_and_bind (char *port) {
 
 	if (rp == NULL) {
 		fprintf (stderr, "Could not bind\n");
+		perror("[create_and_bind]");
 		return -1;
 	}
 
