@@ -798,7 +798,9 @@ static int should_not_report(struct device *d)
 
 	list_for_each_safe(pos, n, &d->eplisthead) {
 		ep = list_entry(pos, struct endpoint, list);
-		if(ZCL_HA_DEVICEID_IAS_ZONE == ep->simpledesc.simpledesc.DeviceID &&
+		if((ZCL_HA_DEVICEID_IAS_ZONE == ep->simpledesc.simpledesc.DeviceID || 
+			ZCL_HA_DEVICEID_IAS_WARNING_DEVICE == ep->simpledesc.simpledesc.DeviceID ||
+			ZCL_HA_DEVICEID_IAS_ANCILLARY_CONTROL_EQUIPMENT == ep->simpledesc.simpledesc.DeviceID) &&
 			0 == ep->simpledesc.zonetype)
 			return 1;
 	}
