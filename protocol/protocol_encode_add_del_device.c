@@ -91,7 +91,7 @@ unsigned int protocol_encode_add_del_device(unsigned char * buf, unsigned long l
 	unsigned char *p1=buf+1;
 	bytebuffer_writeword(&p1,templen+2);
 
-	unsigned checksum = protocol_checksum(buf,templen);
+	unsigned char checksum = protocol_checksum(buf,templen);
 	bytebuffer_writebyte(&p,checksum);
 	bytebuffer_writebyte(&p,PROTOCOL_END_FLAG);
 

@@ -83,7 +83,7 @@ int protocol_check(struct connection * c, unsigned short * messageid) {
 	unsigned char *pbuf = buf;
 	unsigned int len = connection_readbuf_getahead(c, buf, BUFLEN);
 	if(len == 0){
-		messageid = ILLEGAL;
+		*messageid = ILLEGAL;
 		pbuf = NULL;
 		return 0;
 	}

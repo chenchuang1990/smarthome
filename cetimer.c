@@ -32,7 +32,7 @@ void checkstatus(int i){
 	if(t%70==0) {
 		sendnonblocking(s_timer->wfd, CECHECK, 1);
 	}
-	if((t%80==0) || reconn_first) {
+	if((t%50==0) || reconn_first) {
 		reconn_first = 0;		
 		sendnonblocking(s_timer->reconnwfd, CERECONN, 1);
 	}

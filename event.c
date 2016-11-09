@@ -178,14 +178,16 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 							}
 						}else{
 							//result = (sqlitedb_update_devicename(set_device_name.ieee, set_device_name.name) == 0)?1:0;
-							result = sqlitedb_update_devicename(set_device_name.ieee, set_device_name.name);
-							if(0 == result){
-								struct device * d = gateway_getdevice(getgateway(), set_device_name.ieee);
-								if(d){
-									memcpy(d->devicename,set_device_name.name, strlen(set_device_name.name));
-									d->devicename[strlen(set_device_name.name)] = 0;
-								}
+							//result = sqlitedb_update_devicename(set_device_name.ieee, set_device_name.name);
+							//if(0 == result){
+							struct device * d = gateway_getdevice(getgateway(), set_device_name.ieee);
+							if(d){
+								result = 0;
+								result = sqlitedb_update_devicename(set_device_name.ieee, set_device_name.name);
+								memcpy(d->devicename,set_device_name.name, strlen(set_device_name.name));
+								d->devicename[strlen(set_device_name.name)] = 0;
 							}
+							//}
 							
 						}
 						unsigned char sbuf[512] = {0};
