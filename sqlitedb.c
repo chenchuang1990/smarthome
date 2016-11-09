@@ -11,7 +11,7 @@
 #define GATEWAYTABLENAME "gateway"
 #define DEVICETABLENAME "device"
 
-#define GATEWAY_VERSION 1
+#define GATEWAY_VERSION 0
 
 struct sqlitedb{ 
 	sqlite3 * db;
