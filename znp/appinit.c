@@ -1073,7 +1073,9 @@ static int ias_zone_device(struct device *d)
 
 	list_for_each_safe(pos, n, &d->eplisthead) {
 		ep = list_entry(pos, struct endpoint, list);
-		if(ZCL_HA_DEVICEID_IAS_ZONE == ep->simpledesc.simpledesc.DeviceID)
+		if(ZCL_HA_DEVICEID_IAS_ZONE == ep->simpledesc.simpledesc.DeviceID || 
+			ZCL_HA_DEVICEID_IAS_WARNING_DEVICE == ep->simpledesc.simpledesc.DeviceID ||
+			ZCL_HA_DEVICEID_IAS_ANCILLARY_CONTROL_EQUIPMENT == ep->simpledesc.simpledesc.DeviceID)
 			return 1;
 	}
 	return 0;
