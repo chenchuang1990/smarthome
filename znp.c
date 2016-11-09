@@ -16,9 +16,9 @@ int g_znpwfd = -1;
 void *rpctask(void *argument)
 {
 	while (1) {
-		printf("======[rpcProcess] start======\n");
+		//printf("======[rpcProcess] start======\n");
 		rpcProcess();
-		printf("======[rpcProcess] end======\n");
+		//printf("======[rpcProcess] end======\n");
 	}
 
 	dbg_print(PRINT_LEVEL_WARNING, "rpcTask exited!\n");
