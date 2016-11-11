@@ -476,13 +476,15 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 								if(d->accesscnt-- <= 0)
 									d->accesscnt = 0;
                                 c->cur_dev = NULL;
-								printf("exit count:%d\n", d->accesscnt);
+								printf("------exit count:%d-----\n", d->accesscnt);
 								break;
 							}
 							//else if (0xff == onoff_state.endpoint && 1 == d->noneedcheck) {
 							else if (0xff == onoff_state.endpoint) {
+								if((c->cur_dev == d) && (c->type == CONNSOCKETCLIENT))
+									break;
 								d->accesscnt++;
-								printf("enter count:%d\n", d->accesscnt);
+								printf("++++++enter count:%d++++++\n", d->accesscnt);
 								c->cur_dev = d;
 								d->record = d->activeep.ActiveEPCount;
 								d->timestamp = time(NULL);
