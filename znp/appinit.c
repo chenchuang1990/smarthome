@@ -1422,6 +1422,7 @@ static uint8_t mtAfIncomingMsgCb(IncomingMsgFormat_t *msg)
 	pthread_mutex_unlock(&big_mutex);
 		//d->timestamp = time(NULL);
 	//}
+	printf("mtAfIncomingMsgCb end\n");
 
 	return 0;
 }
@@ -2006,6 +2007,7 @@ void* appMsgProcess(void *argument)
 	if (initDone)
 	{
 	//	rpcWaitMqClientMsg(10000);
+		//printf("[appMsgProcess]\n");
 		rpcWaitMqClientMsg(50);
 	}
 

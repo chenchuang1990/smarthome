@@ -393,7 +393,9 @@ static void processIncomingMsg(uint8_t *rpcBuff, uint8_t rpcLen)
 				rsp.Data[i] = rpcBuff[msgIdx++];
 			}
 		}
+		printf("mtAfCbs.pfnAfIncomingMsg start\n");
 		mtAfCbs.pfnAfIncomingMsg(&rsp);
+		printf("mtAfCbs.pfnAfIncomingMsg end\n");
 	}
 }
 
@@ -606,8 +608,9 @@ void afProcess(uint8_t *rpcBuff, uint8_t rpcLen)
 			break;
 		case MT_AF_INCOMING_MSG:
 			dbg_print(PRINT_LEVEL_VERBOSE, "afProcess: MT_AF_INCOMING_MSG\n");
-			//printf("afProcess: MT_AF_INCOMING_MSG\n");
+			printf("afProcess: MT_AF_INCOMING_MSG start\n");
 			processIncomingMsg(rpcBuff, rpcLen);
+			printf("afProcess: MT_AF_INCOMING_MSG end\n");
 			break;
 		case MT_AF_INCOMING_MSG_EXT:
 			dbg_print(PRINT_LEVEL_VERBOSE,

@@ -243,7 +243,9 @@ int32_t rpcWaitMqClientMsg(uint32_t timeout)
 			printf("%02x ", rpcFrame[i]);
 		printf("\n");
 		#endif
-		mtProcess(rpcFrame, rpcLen);		
+		printf("=====process incoming message start======\n");
+		mtProcess(rpcFrame, rpcLen);
+		printf("=====process incoming message end======\n");
 	}
 	else
 	{
@@ -301,8 +303,8 @@ int32_t rpcProcess(void)
 
 		if (bytesRead == 1)
 		{
-		/*printf("@@@@@@\n");
-		printf("repLen:%d\n", rpcLen);*/
+		printf("@@@@@@\n");
+		printf("repLen:%d\n", rpcLen);
 			//int i;
 			len = rpcLen;
 			rpcBuff[0] = rpcLen;
@@ -385,6 +387,7 @@ int32_t rpcProcess(void)
 					        rpcBuff[1] & MT_RPC_SUBSYSTEM_MASK);
 
 					//unblock waiting sreq
+					printf("[rpcProcess]sem_post\n");
 					sem_post(&srspSem);
 
 					dbg_print(PRINT_LEVEL_INFO,
@@ -393,7 +396,7 @@ int32_t rpcProcess(void)
 
 					// send message to queue
 					llq_add(&rpcLlq, (char*) &rpcBuff[1], rpcLen, 1);
-					//printf("list to head\n");
+					printf("list to head\n");
 				}
 				else
 				{
@@ -414,7 +417,8 @@ int32_t rpcProcess(void)
 
 				// send message to queue
 				llq_add(&rpcLlq, (char*) &rpcBuff[1], rpcLen, 0);
-				/*printf("list to tail\n");
+				printf("list to tail\n");
+				/*int i;
 				for(i = 0; i < rpcLen; i++)
 					printf("%02x ", rpcBuff[i+1]);
 				printf("\n");*/

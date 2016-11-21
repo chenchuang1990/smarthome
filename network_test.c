@@ -370,6 +370,7 @@ void *send_read_onoff(void *args)
 	while(1) {
 		if(initDone) {
 			pthread_mutex_lock(&big_mutex);
+			//printf("[send_read_onoff] lock\n");
 			list_for_each_safe(pos, n, &gw->head) { 
 				d = list_entry(pos, struct device, list); 
 				if(d && device_check_status(d, DEVICE_APP_ADD) && 
@@ -390,7 +391,7 @@ void *send_read_onoff(void *args)
 							printf("send read cmd endpoint:%d\n", ep->simpledesc.simpledesc.Endpoint);
 							//#if 0
 							if(check_device_timeout(d)) {
-								printf("send_read_onoff:DEVICE_LEAVE_NET\n");
+								printf("send_read_onoff:d->accesscnt = 0\n");
 								d->accesscnt = 0;
 								continue;
 							}
@@ -403,6 +404,7 @@ void *send_read_onoff(void *args)
 								cluster_id = ZCL_CLUSTER_ID_GEN_ON_OFF;*/
 							
 							zcl_SendRead(1, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, cluster_id, &readcmd, ZCL_FRAME_CLIENT_SERVER_DIR,0,get_sequence());
+							printf("[send_read_onoff] zcl_SendRead end\n");
 						}
 						#if 0
 						for(i = 0; i < ep->simpledesc.simpledesc.NumInClusters; i++) {

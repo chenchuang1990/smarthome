@@ -952,7 +952,7 @@ int zcl_proccessincomingmessage(IncomingMsgFormat_t * message){
 	if(message->Len == 0){
 		return 1;
 	}
-
+printf("zcl_proccessincomingmessage..\n");
 	struct zclincomingmsg zclmessage;
 	memset(&zclmessage, 0, sizeof(struct zclincomingmsg));
 	zclmessage.message = message;
