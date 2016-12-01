@@ -82,6 +82,7 @@ static void print_hex(unsigned char *addr, int len)
 }
 
 extern int access_period;
+extern unsigned long long test_ieee;
 
 void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int buflen)
 {
@@ -228,7 +229,8 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 							device_clear_status(d, DEVICE_APP_ADD);
 							pthread_mutex_lock(&big_mutex);
 							printf("delete lock\n");
-							sqlitedb_delete_device(del_device.ieee);							
+							sqlitedb_delete_device(del_device.ieee);
+							d->accesscnt = 0;
 							gateway_deldevice(getgateway(), d);	
 							d = NULL;
 							printf("delete unlock\n");
@@ -376,6 +378,11 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						 } 
 						 ep->simpledesc.device_state = level_ctrl_ieee_cmd.level_ctrl_ieee.level_ctrl_cmd.move2level.level;
 					     sendnonblocking(g_main_to_znp_write_fd, &level_ctrl_ieee_cmd, sizeof(struct protocol_cmdtype_level_ctrl_ieee_cmd));
+
+						 struct device * d = gateway_getdevice(getgateway(), level_ctrl_ieee_cmd.level_ctrl_ieee.ieee);
+						 d->accesscnt = 1;
+						 d->timestamp = time(NULL);
+						 printf("d->accesscnt:%d\n", d->accesscnt);
 				     }
 					 break;
 				case PERMIT_JOINING:
@@ -579,28 +586,70 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 					{
 						const unsigned char *p = buffer;
 						struct test_header test;
-						zclCfgReportCmd_t CfgReportCmd;
+						//static unsigned long long test_ieee;
 						
 						bytebuffer_skipbytes(&p, 5);
 						bytebuffer_readdword(&p, &test.serialnum);
 						bytebuffer_readquadword(&p, &test.ieee);
 						bytebuffer_readbyte(&p, &test.endpoint);
 						printf("serialnum:%d ieee:%llx endpoint:%x\n", test.serialnum, test.ieee, test.endpoint);
-						//unsigned char change = 0;
-						memset(&CfgReportCmd, 0, sizeof(CfgReportCmd));
-						CfgReportCmd.numAttr = 1;
-						CfgReportCmd.attrList[0].direction = 0;
-						CfgReportCmd.attrList[0].attrID = 0x0000;
-						CfgReportCmd.attrList[0].dataType = 0x10;
-						CfgReportCmd.attrList[0].minReportInt = 0;
-						CfgReportCmd.attrList[0].maxReportInt = 30;
-						CfgReportCmd.attrList[0].timeoutPeriod = 0;
-						CfgReportCmd.attrList[0].reportableChange = NULL;
+						switch(test.serialnum) {
+						case 1:
+						{
+							//unsigned char change = 0;
+							zclCfgReportCmd_t CfgReportCmd;
+							memset(&CfgReportCmd, 0, sizeof(CfgReportCmd));
+							CfgReportCmd.numAttr = 1;
+							CfgReportCmd.attrList[0].direction = 0;
+							CfgReportCmd.attrList[0].attrID = 0x0000;
+							CfgReportCmd.attrList[0].dataType = 0x10;
+							CfgReportCmd.attrList[0].minReportInt = 0;
+							CfgReportCmd.attrList[0].maxReportInt = 30;
+							CfgReportCmd.attrList[0].timeoutPeriod = 0;
+							CfgReportCmd.attrList[0].reportableChange = NULL;
 
-						struct device *d = gateway_getdevice(getgateway(), test.ieee);
-						if(d) {
-							printf("gateway_get_endpoint\n");
-							zcl_SendConfigReportCmd(1, 1, d->shortaddr, 0x0006, &CfgReportCmd, 0, 1, get_sequence());
+							struct device *d = gateway_getdevice(getgateway(), test.ieee);
+							if(d) {
+								printf("gateway_get_endpoint\n");
+								zcl_SendConfigReportCmd(1, 1, d->shortaddr, 0x0006, &CfgReportCmd, 0, 1, get_sequence());
+							}						
+							break;
+						}
+						case 2:
+						{
+							printf("send zdoIeeeAddrReq\n");
+							IeeeAddrReqFormat_t ieee_req;
+							memset(&ieee_req, 0, sizeof(ieee_req));
+							ieee_req.ShortAddr = 0;
+							ieee_req.ReqType = 0;
+							ieee_req.StartIndex = 0;
+							zdoIeeeAddrReq(&ieee_req);						
+							break;
+						}
+						case 3:
+						{
+							printf("zdo bind req\n");
+							printf("src ieee: %llx\n", test_ieee);
+							//unsigned char *p;
+							BindReqFormat_t bind_req;
+							struct device *d = gateway_getdevice(getgateway(), test.ieee);
+							printf("dst ieee: %llx\n", d->ieeeaddr);
+							bind_req.ClusterID = 0x0006;
+							bind_req.DstAddr = d->shortaddr;
+							memcpy(bind_req.DstAddress, (char *)(&d->ieeeaddr), 8);
+							//p = bind_req.DstAddress;
+							//bytebuffer_writequadword(&p, d->ieeeaddr);
+							bind_req.DstAddrMode = afAddr16Bit;
+							bind_req.DstEndpoint = 1;
+
+							//p = bind_req.SrcAddress;
+							//bytebuffer_writequadword(&p, test_ieee);
+							memcpy(bind_req.SrcAddress, (char *)(&test_ieee), 8);
+							bind_req.SrcEndpoint = 1;
+							zdoBindReq(&bind_req);
+							break;
+						}
+							
 						}
 					}
 					break;
@@ -921,6 +970,10 @@ void event_recvznp(struct eventhub * hub, int fd){
 								}
 								buflen = protocol_encode_alarm(buf, &req);
 								broadcast(buf, buflen);
+							}
+							else {
+								printf("^V^*^V^*^V^*^V^* Heart Beat *^V^*^V^*^V^*^V^*\n");
+								printf("%llx------->%d:%d:%d\n", d->ieeeaddr, tm->tm_hour, tm->tm_min, tm->tm_sec);
 							}
 						}	
 						ep->simpledesc.zcl_transnum = req.trans_num;

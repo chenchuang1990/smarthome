@@ -378,7 +378,6 @@ void *send_read_onoff(void *args)
 					printf("d->accesscnt = %d\n", d->accesscnt);
 					//printf("send read cmd ieee:%llx\n", d->ieeeaddr);
 					need_delay = 1;
-					//d->timestamp = time(NULL);
 					list_for_each_safe(ep_pos, ep_n, &d->eplisthead) {
 						ep = list_entry(ep_pos, struct endpoint, list);
 						if(ep) {							
@@ -402,9 +401,14 @@ void *send_read_onoff(void *args)
 								cluster_id = ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL;
 							else
 								cluster_id = ZCL_CLUSTER_ID_GEN_ON_OFF;*/
-							
-							zcl_SendRead(1, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, cluster_id, &readcmd, ZCL_FRAME_CLIENT_SERVER_DIR,0,get_sequence());
+							unsigned char epnum = ep->simpledesc.simpledesc.Endpoint;
+							unsigned short shortaddr = d->shortaddr;
+							pthread_mutex_unlock(&big_mutex);
+							printf("[send_read_onoff] zcl_SendRead start\n");
+							//zcl_SendRead(1, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, cluster_id, &readcmd, ZCL_FRAME_CLIENT_SERVER_DIR,0,get_sequence());
+							zcl_SendRead(1, epnum, shortaddr, cluster_id, &readcmd, ZCL_FRAME_CLIENT_SERVER_DIR,0,get_sequence());
 							printf("[send_read_onoff] zcl_SendRead end\n");
+							pthread_mutex_lock(&big_mutex);
 						}
 						#if 0
 						for(i = 0; i < ep->simpledesc.simpledesc.NumInClusters; i++) {

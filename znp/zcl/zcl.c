@@ -299,6 +299,7 @@ ZStatus_t zcl_sendcommand( uint8 srcEP, uint8 dstEp, uint16 dstaddr,
 		req.Len = msgLen;
 		memcpy(req.Data, msgBuf, msgLen);
 		free(msgBuf);
+		printf("[zcl_sendcommand]sendcmd...\n");
 		sendcmd((unsigned char *)&req, AF_DATA_REQUEST);
 
 	}
@@ -652,9 +653,10 @@ ZStatus_t zcl_SendRead( uint8 srcEP, uint8 dstEp, uint16 dstAddr,
 			*pBuf++ = LO_UINT16( readCmd->attrID[i] );
 			*pBuf++ = HI_UINT16( readCmd->attrID[i] );
 		}
-
+		printf("[zcl_SendRead]zcl_sendcommand start\n");
 		status = zcl_sendcommand( srcEP, dstEp, dstAddr, clusterID, ZCL_CMD_READ, FALSE,
 				direction, disableDefaultRsp, 0, seqNum, dataLen, buf );
+		printf("[zcl_SendRead]zcl_sendcommand end\n");
 		free( buf );
 	}
 	else

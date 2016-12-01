@@ -3,6 +3,7 @@
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include "sqlitedb.h"
 #include "zcl_ss.h" 
@@ -14,6 +15,7 @@
 #include "gateway.h" 
 
 extern int g_znpwfd;
+extern pthread_mutex_t big_mutex;
 
 #define NEW_PROTOCOL
 
@@ -306,8 +308,9 @@ int zclss_processincmd_zonestatus_enrollrequest(struct zclincomingmsg * pInMsg){
 	// if ( stat == ZSuccess )
 	{
 		// Send a response back
+		pthread_mutex_unlock(&big_mutex);
 		stat = zclSS_IAS_Send_ZoneStatusEnrollResponseCmd( pInMsg->message->DstEndpoint, pInMsg->message->SrcEndpoint, pInMsg->message->SrcAddr, responseCode, zoneID, TRUE, pInMsg->zclframehdr.transseqnum );
-
+		pthread_mutex_lock(&big_mutex);
 		//return ( ZCL_STATUS_CMD_HAS_RSP );
 	}
 	// else

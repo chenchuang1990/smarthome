@@ -507,6 +507,7 @@ static uint8_t mtZdoNwkAddrRspCb(NwkAddrRspFormat_t *msg)
 
 	return msg->Status;
 }
+unsigned long long test_ieee;
 static uint8_t mtZdoIeeeAddrRspCb(IeeeAddrRspFormat_t *msg)
 {
 	consolePrint("mtZdoIeeeAddrRspCb\n");
@@ -529,6 +530,8 @@ static uint8_t mtZdoIeeeAddrRspCb(IeeeAddrRspFormat_t *msg)
 	{
 		consolePrint("IeeeAddrRsp Status: FAIL 0x%02X\n", msg->Status);
 	}
+
+	test_ieee = msg->IEEEAddr;
 
 	return msg->Status;
 }
@@ -590,7 +593,7 @@ void report_new_device(struct device * d)
 	fprintf(stdout, "********send add new device %llX %d %d\n", enroll_cmd.req.ieeeaddr, n, sizeof(struct zcl_zone_enroll_req_cmd));
 }
 
-static void send_read_attr_cmd(struct device *d)
+static void send_read_attr_cmd_with_unlock(struct device *d)
 {
 	zclReadCmd_t readcmd; 
 	readcmd.numAttr = 8;
@@ -605,8 +608,14 @@ static void send_read_attr_cmd(struct device *d)
 
 	struct endpoint *ep = list_entry(d->eplisthead.next, struct endpoint, list);
 	if(ep) {
+		unsigned char epnum = ep->simpledesc.simpledesc.Endpoint;
+		unsigned short shortaddr = d->shortaddr;
+		printf("[send_read_attr_cmd] SimpleDesc unlock");
+		pthread_mutex_unlock(&big_mutex);
 		printf("send_read_attr_cmd:send read attribute cmd\n");
-		zcl_SendRead(1, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, ZCL_CLUSTER_ID_GEN_BASIC, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC, 0, 0);
+		//zcl_SendRead(1, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, ZCL_CLUSTER_ID_GEN_BASIC, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC, 0, 0);
+		zcl_SendRead(1, epnum, shortaddr, ZCL_CLUSTER_ID_GEN_BASIC, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC, 0, 0);
+		//pthread_mutex_lock(&big_mutex);
 	}
 }
 
@@ -627,7 +636,7 @@ static uint8_t mtZdoSimpleDescRspCb(SimpleDescRspFormat_t *msg)
 		uint32_t i;
 
 		pthread_mutex_lock(&big_mutex);
-		printf("[mtZdoSimpleDescRspCb] lock\n");
+		printf("[mtZdoSimpleDescRspCb] SimpleDesc lock\n");
 		struct device * d = gateway_getdevice_shortaddr(msg->SrcAddr);
 		for (i = 0; i < msg->NumInClusters; i++)
 		{
@@ -653,6 +662,8 @@ static uint8_t mtZdoSimpleDescRspCb(SimpleDescRspFormat_t *msg)
 			struct endpoint * ep = endpoint_create(&sc);
 			device_addendpoint(d, ep);
 
+			printf("[mtZdoSimpleDescRspCb] SimpleDesc unlock\n");
+			pthread_mutex_unlock(&big_mutex);
 			SimpleDescReqFormat_t req;
 			req.DstAddr = msg->SrcAddr;
 			req.NwkAddrOfInterest = msg->NwkAddr;
@@ -671,10 +682,11 @@ static uint8_t mtZdoSimpleDescRspCb(SimpleDescRspFormat_t *msg)
 			device_set_status(d, DEVICE_GET_SIMPLEDESC);
 			report_new_device(d);
 			device_set_status(d, DEVICE_ACTIVE);
-			send_read_attr_cmd(d);
+
+			send_read_attr_cmd_with_unlock(d);
 		}
-		printf("[mtZdoSimpleDescRspCb] unlock\n");
-		pthread_mutex_unlock(&big_mutex);
+		//printf("[mtZdoSimpleDescRspCb] unlock\n");
+		//pthread_mutex_unlock(&big_mutex);
 	}
 	else
 	{
@@ -709,7 +721,8 @@ static uint8_t mtZdoActiveEpRspCb(ActiveEpRspFormat_t *msg)
 			device_set_status(d, DEVICE_SEND_SIMPLEDESC);
 			device_set_status(d, DEVICE_GET_ACTIVEEP);
 			device_setep(d, msg);
-
+			printf("[mtZdoActiveEpRspCb] unlock\n");
+			pthread_mutex_unlock(&big_mutex);
 			SimpleDescReqFormat_t req;
 			req.DstAddr = msg->SrcAddr;
 			req.NwkAddrOfInterest = msg->NwkAddr;
@@ -718,9 +731,10 @@ static uint8_t mtZdoActiveEpRspCb(ActiveEpRspFormat_t *msg)
 
 			//			device_increase(d);
 		}
-		printf("[mtZdoActiveEpRspCb] unlock\n");
-		pthread_mutex_unlock(&big_mutex);
-
+		else {
+			printf("[mtZdoActiveEpRspCb] unlock\n");
+			pthread_mutex_unlock(&big_mutex);
+		}
 	}
 	else
 	{
@@ -1183,11 +1197,15 @@ static uint8_t mtZdoEndDeviceAnnceIndCb(EndDeviceAnnceIndFormat_t *msg)
 		d->status &= ~DEVICE_SEND_SIMPLEDESC;
 		sqlitedb_update_device_status(d);
 		
+		//printf("[mtZdoEndDeviceAnnceIndCb] unlock\n");
+		pthread_mutex_unlock(&big_mutex);
 		ActiveEpReqFormat_t queryep;
 		memset(&queryep, 0, sizeof(ActiveEpReqFormat_t));
 		queryep.NwkAddrOfInterest = msg->NwkAddr;
 		queryep.DstAddr = msg->SrcAddr;
 		sendcmd((unsigned char *)&queryep, ZDO_ACTIVE_EP_REQ);
+		pthread_mutex_lock(&big_mutex);
+		//printf("[mtZdoEndDeviceAnnceIndCb] lock\n");
 	}
 	else if(d && device_check_status(d, DEVICE_ACTIVE)) {
 		if(!ias_zone_device(d)) {
@@ -2080,11 +2098,11 @@ void appProcess(void * args)
 					struct protocol_cmdtype_identify_ieee identify_ieee;
 					int n = read(znprfd, &identify_ieee, sizeof(struct protocol_cmdtype_identify_ieee));
 					fprintf(stdout, "identify znp recv %d %d -------\n", n, sizeof(struct protocol_cmdtype_identify_ieee));
-					pthread_mutex_lock(&big_mutex);
-					printf("[zcl_down_cmd_identify] lock\n");
+					//pthread_mutex_lock(&big_mutex);
+					//printf("[zcl_down_cmd_identify] lock\n");
 					zcl_down_cmd_identify(identify_ieee.ieee,&identify_ieee.identify);
-					printf("[zcl_down_cmd_identify] unlock\n");
-					pthread_mutex_unlock(&big_mutex);
+					//printf("[zcl_down_cmd_identify] unlock\n");
+					//pthread_mutex_unlock(&big_mutex);
 				}
 				break;
 			case PROTOCOL_WARNING:
@@ -2092,58 +2110,59 @@ void appProcess(void * args)
 					struct protocol_cmdtype_warning_ieee warning_ieee;
 					int n = read(znprfd, &warning_ieee, sizeof(struct protocol_cmdtype_warning_ieee));
 					fprintf(stdout, "warning znp recv %d %d -------\n", n, sizeof(struct protocol_cmdtype_warning_ieee));
-					pthread_mutex_lock(&big_mutex);
-					printf("[zcl_down_cmd_warning] lock\n");
+					//pthread_mutex_lock(&big_mutex);
+					//printf("[zcl_down_cmd_warning] lock\n");
 					zcl_down_cmd_warning(warning_ieee.ieee, &warning_ieee.warning);
-					printf("[zcl_down_cmd_warning] unlock\n");
-					pthread_mutex_unlock(&big_mutex);
+					//printf("[zcl_down_cmd_warning] unlock\n");
+					//pthread_mutex_unlock(&big_mutex);
 				}
 				break;
 			case PROTOCOL_ONOFF:
 				{
 					struct protocol_cmdtype_onoff_ieee onoff_ieee;
 					read(znprfd, &onoff_ieee, sizeof(struct protocol_cmdtype_onoff_ieee));
-					pthread_mutex_lock(&big_mutex);
-					printf("[zcl_down_cmd_onoff] lock\n");
+					printf("[appProcess] PROTOCOL_ONOFF\n");
+					//pthread_mutex_lock(&big_mutex);
+					//printf("[zcl_down_cmd_onoff] lock\n");
 					zcl_down_cmd_onoff(&onoff_ieee);
-					printf("[zcl_down_cmd_onoff] unlock\n");
-					pthread_mutex_unlock(&big_mutex);
+					//printf("[zcl_down_cmd_onoff] unlock\n");
+					//pthread_mutex_unlock(&big_mutex);
 				}
 				break;
 			case PROTOCOL_LEVEL_CTRL:
 				{
 					struct protocol_cmdtype_level_ctrl_ieee level_ctrl_ieee;
 					read(znprfd, &level_ctrl_ieee, sizeof(struct protocol_cmdtype_level_ctrl_ieee));
-					
-					pthread_mutex_lock(&big_mutex);
-					printf("[zcl_down_cmd_level_ctrl] lock\n");
+					printf("[appProcess] PROTOCOL_LEVEL_CTRL\n");
+					//pthread_mutex_lock(&big_mutex);
+					//printf("[zcl_down_cmd_level_ctrl] lock\n");
 					zcl_down_cmd_level_ctrl(&level_ctrl_ieee);
-					printf("[zcl_down_cmd_level_ctrl] unlock\n");
-					pthread_mutex_unlock(&big_mutex);
+					//printf("[zcl_down_cmd_level_ctrl] unlock\n");
+					//pthread_mutex_unlock(&big_mutex);
 				}
 				break;
 			case PROTOCOL_PERMIT_JOING:
 				{
 					struct protocol_cmdtype_permit_joining permit_joining;
 					read(znprfd, &permit_joining, sizeof(struct protocol_cmdtype_permit_joining));
-					
-					pthread_mutex_lock(&big_mutex);
-					printf("[zcl_down_cmd_permit_joining] lock\n");
+					printf("[appProcess] PROTOCOL_PERMIT_JOING\n");
+					//pthread_mutex_lock(&big_mutex);
+					//printf("[zcl_down_cmd_permit_joining] lock\n");
 					zcl_down_cmd_permit_joining(&permit_joining);
-					printf("[zcl_down_cmd_permit_joining] unlock\n");
-					pthread_mutex_unlock(&big_mutex);
+					//printf("[zcl_down_cmd_permit_joining] unlock\n");
+					//pthread_mutex_unlock(&big_mutex);
 				}
 				break;
 			case PROTOCOL_CONFIG_REPORT:
 				{
 					struct protocol_cmdtype_config_reporting cfg_reporting;
 					read(znprfd, &cfg_reporting, sizeof(struct protocol_cmdtype_config_reporting));
-					
-					pthread_mutex_lock(&big_mutex);
-					printf("[zcl_down_cmd_config_reporting] lock\n");
+					printf("[appProcess] PROTOCOL_CONFIG_REPORT\n");
+					//pthread_mutex_lock(&big_mutex);
+					//printf("[zcl_down_cmd_config_reporting] lock\n");
 					zcl_down_cmd_config_reporting(&cfg_reporting);
-					printf("[zcl_down_cmd_config_reporting] unlock\n");
-					pthread_mutex_unlock(&big_mutex);
+					//printf("[zcl_down_cmd_config_reporting] unlock\n");
+					//pthread_mutex_unlock(&big_mutex);
 				}
 				break;
 			#if 0

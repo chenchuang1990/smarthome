@@ -42,6 +42,7 @@
  * INCLUDES
  */
 //#include "ZComDef.h"
+#include <pthread.h>
 #include "zcl.h"
 #include "zcl_general.h"
 //#include "ZDApp.h"
@@ -258,6 +259,9 @@ static ZStatus_t zclGeneral_ProcessInLocationClient( zclIncoming_t *pInMsg, zclG
  *
  * @return  ZStatus_t
  */
+
+extern pthread_mutex_t big_mutex;
+
 ZStatus_t zclGeneral_SendIdentify( uint8 srcEP, uint8 dstEP, uint16 dstAddr,
                                    uint16 identifyTime, uint8 disableDefaultRsp, uint8 seqNum )
 {

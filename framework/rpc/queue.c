@@ -134,7 +134,9 @@ int llq_timedreceive(llq_t *hndl, char *buffer, int maxLength,
 	if (timeout != NULL)
 	{
 		//wait for a message or timeout
+		//printf("[llq_timedreceive] sem_timedwait start\n");
 		sepmRnt = sem_timedwait(&(hndl->llqCountSem), timeout);
+		//printf("[llq_timedreceive] sem_timedwait end\n");
 	}
 	else
 	{
@@ -147,7 +149,9 @@ int llq_timedreceive(llq_t *hndl, char *buffer, int maxLength,
 		if (hndl->head != NULL)
 		{
 			//wait to get access to the que
+			//printf("[llq_timedreceive] sem_wait start\n");
 			sem_wait(&(hndl->llqAccessSem));
+			//printf("[llq_timedreceive] sem_wait end\n");
 
 			hndl->temp = hndl->head->ptr;
 			memcpy(buffer, hndl->head->data, hndl->head->length);

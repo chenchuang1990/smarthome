@@ -50,9 +50,9 @@
 #include <errno.h>
 #include <signal.h>
 #include <semaphore.h>
-#include <time.h>
+//#include <time.h>
+#include <sys/time.h>
 #include "queue.h"
-#include <time.h>
 
 #include "rpc.h"
 #include "rpcTransport.h"
@@ -221,10 +221,13 @@ int32_t rpcWaitMqClientMsg(uint32_t timeout)
 	dbg_print(PRINT_LEVEL_INFO,
 	        "rpcWaitMqClientMsg: waiting on queue %d:%d:%d\n", timeout,
 	        to.tv_sec, to.tv_nsec);
-
+	//printf("[rpcWaitMqClientMsg] gettimeofday beftime\n");
 	gettimeofday(&befTime, NULL);
+	//printf("[rpcWaitMqClientMsg] llq_timedreceive\n");
 	rpcLen = llq_timedreceive(&rpcLlq, (char *) rpcFrame, RPC_MAX_LEN + 1, &to);
+	//printf("[rpcWaitMqClientMsg] gettimeofday aftTime\n");
 	gettimeofday(&aftTime, NULL);
+	//printf("[rpcWaitMqClientMsg] gettimeofday end\n");
 	if (rpcLen != -1)
 	{
 		mBefTime = befTime.tv_sec * 1000;
@@ -460,7 +463,9 @@ uint8_t rpcSendFrame(uint8_t cmd0, uint8_t cmd1, uint8_t *payload,
 
 	// block here if SREQ is in progress
 	dbg_print(PRINT_LEVEL_INFO, "rpcSendFrame: Blocking on RPC sem\n");
+	printf("[rpcSendFrame] start\n");
 	sem_wait(&rpcSem);
+	printf("[rpcSendFrame] end\n");
 	dbg_print(PRINT_LEVEL_INFO, "rpcSendFrame: Sending RPC\n");
 
 	// fill in header bytes
@@ -508,7 +513,9 @@ uint8_t rpcSendFrame(uint8_t cmd0, uint8_t cmd1, uint8_t *payload,
 		        expectedSrspCmdId);
 
 		//Wait for the SRSP
+		printf("[rpcSendFrame] start\n");
 		status = sem_timedwait(&srspSem, &srspTimeOut);
+		printf("[rpcSendFrame] end\n");
 		if (status == -1)
 		{
 			dbg_print(PRINT_LEVEL_WARNING,

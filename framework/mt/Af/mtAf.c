@@ -143,13 +143,15 @@ uint8_t afDataRequest(DataRequestFormat_t *req)
 			cmd[cmInd++] = req->Data[idx];
 
 		}
-
+		printf("[afDataRequest] rpcSendFrame start\n");
 		status = rpcSendFrame((MT_RPC_CMD_SREQ | MT_RPC_SYS_AF),
 		MT_AF_DATA_REQUEST, cmd, cmdLen);
-
+		printf("[afDataRequest] rpcSendFrame end\n");
 		if (status == MT_RPC_SUCCESS)
 		{
+			printf("[afDataRequest] rpcWaitMqClientMsg start\n");
 			rpcWaitMqClientMsg(50);
+			printf("[afDataRequest] rpcWaitMqClientMsg end\n");
 		}
 
 		free(cmd);
