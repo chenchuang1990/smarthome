@@ -66,7 +66,7 @@ int _sqlitedb_table_exist(struct sqlitedb * db, char * tablename){
 }
 
 static const char sql_create_gateway_table[] = "create table gateway(mac integer primary key, name text);";
-static const char sql_create_device_table[] = "create table device(ieee integer primary key,shortaddr integer, name text, status integer,zclversion integer, applicationversion integer, stackversion integer, hwversion integer, manufacturername text,modelidentifier text,datecode text,endpoint blob);";
+static const char sql_create_device_table[] = "create table device(ieee integer primary key,shortaddr integer, name text, status integer,zclversion integer, applicationversion integer, stackversion integer, hwversion integer, manufacturername text,modelidentifier text,datecode text, online integer, endpoint blob);";
 
 void sqlitedb_table_build(char * filepath){
 	struct sqlitedb * db = sqlitedb_create(filepath);
@@ -199,7 +199,7 @@ void _sqlite3_load_device(sqlite3_stmt *stmt, int col, struct device *d)
 
 }
 
-static const char sql_select_device[] = "select ieee, shortaddr, name , status ,zclversion , applicationversion , stackversion , hwversion , manufacturername ,modelidentifier ,datecode ,endpoint from device;";
+static const char sql_select_device[] = "select ieee, shortaddr, name , status ,zclversion , applicationversion , stackversion , hwversion , manufacturername ,modelidentifier ,datecode, online, endpoint from device;";
 void sqlitedb_load_device(){ 
 	struct sqlitedb * db = sqlitedb_create(DBPATH);
 
@@ -217,6 +217,7 @@ void sqlitedb_load_device(){
 	char manufacturername[33];
 	char modelidentifier[33];
 	char datecode[17];
+	unsigned char online;
 
 	if (ret==SQLITE_OK){
 		while(sqlite3_step(stmt) == SQLITE_ROW){
@@ -236,15 +237,19 @@ void sqlitedb_load_device(){
 			_sqlite3_gettext(stmt,9,modelidentifier);
 			memset(datecode, 0, 17);
 			_sqlite3_gettext(stmt,10,datecode);
-			struct device * d = device_create2(ieee,shortaddr, devicename, status, zclversion, applicationversion, stackversion, hwversion, manufacturername, modelidentifier, datecode);
-			//printf("ieee:%llx\n", ieee);
+			online = sqlite3_column_int(stmt,11);
+			struct device * d = device_create2(ieee,shortaddr, devicename, status, zclversion, applicationversion, stackversion, hwversion, manufacturername, modelidentifier, datecode, online);
+			printf("[sqlitedb_load_device]ieee:%llx\n", ieee);
 			//printf("status:%x\n", status);
 			//printf("shortaddr:%x\n", shortaddr);
-			_sqlite3_load_device(stmt,11,d);
+			_sqlite3_load_device(stmt,12,d);
 			gateway_adddevice(getgateway(),d);
 
 		}
 		sqlite3_reset(stmt);
+	}
+	else {
+		perror("[sqlitedb_load_device]");
 	}
 	sqlite3_finalize(stmt);
 
@@ -481,6 +486,27 @@ int sqlitedb_update_device_attr(struct device * d){
 
 	return 0;
 }
+
+static const char sql_update_device_online[] = "update device set online = %d where ieee = %lld";
+
+int sqlitedb_update_device_online(struct device * d)
+{
+	struct sqlitedb * db = sqlitedb_create(DBPATH);
+
+	if(db){
+		char update_device_online[128] = {0};
+		sprintf(update_device_online, sql_update_device_online, d->online, d->ieeeaddr);
+		sqlite3_exec(db->db, update_device_online, NULL, NULL, NULL);
+		
+	}else{
+		return 1;
+	}
+
+	sqlitedb_destroy(db);
+
+	return 0;
+}
+
 
 static const char sql_update_device_status[] = "update device set status = %d where ieee = %lld";
 

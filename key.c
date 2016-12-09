@@ -177,9 +177,9 @@ void *key_event_process(void *args)
 									system("touch /home/root/neednv");
 									system("rm /home/root/gateway.db");	
 									system("sync");
-									ioctl(led_fd, LED_OFF, LED_W);
+									ioctl(led_fd, LED_OFF, LED_Z);
 									usleep(500000);
-									ioctl(led_fd, LED_ON, LED_W);
+									ioctl(led_fd, LED_ON, LED_Z);
 									usleep(500000);
 									system("reboot");
 								}

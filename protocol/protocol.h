@@ -42,7 +42,7 @@
 #define READ_ONOFF_RSP	0x0016
 #define READ_LEVEL_RSP	0x0018
 #define READ_ALARM_RSP  0x001f
-
+#define ONLINE_CHANGE	0x0020
 
 
 

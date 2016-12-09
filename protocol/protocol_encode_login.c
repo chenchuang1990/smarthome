@@ -56,6 +56,7 @@ unsigned int protocol_encode_login(unsigned char *buf, int match) {
 				unsigned char devicenamelen = strlen(d->devicename);
 				bytebuffer_writebyte(&p, devicenamelen);
 				bytebuffer_writebytes(&p, (unsigned char *)d->devicename,devicenamelen);
+				bytebuffer_writebyte(&p, d->online);
 				//unsigned char modelidlen = strlen(d->modelidentifier);
 				//bytebuffer_writebyte(&p, modelidlen);
 				//bytebuffer_writebytes(&p, (unsigned char *)d->modelidentifier, modelidlen);

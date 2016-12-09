@@ -91,7 +91,7 @@ void device_destroy(struct device * d){
 struct device * device_create2(unsigned long long ieee,unsigned short shortaddr, char * name, unsigned char status,
 		unsigned char zclversion, unsigned char applicationversion, 
 		unsigned char stackversion, unsigned char hwversion,
-		char * manufacturername, char * modelidentifier, char * datecode){
+		char * manufacturername, char * modelidentifier, char * datecode, unsigned char online){
 	struct device * d = device_create(ieee, shortaddr);
 	d->status = status;
 	d->zclversion = zclversion;
@@ -113,6 +113,8 @@ struct device * device_create2(unsigned long long ieee,unsigned short shortaddr,
 	len = strlen(name);
 	memcpy(d->devicename, name, len);
 	d->devicename[len] = 0;
+
+	d->online = online;
 
 	return d;
 }

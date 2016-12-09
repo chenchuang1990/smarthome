@@ -582,45 +582,6 @@ int zclss_handle_default( struct zclincomingmsg * zclincomingmsg){
 	return result;
 }
 
-/*
-int report_basic_status(struct zclincomingmsg *zclin)
-{
-	struct zcl_basic_status_cmd cmd;
-	cmd.cmdid = ZCLBASICSTATUS;
-	cmd.req.status= zclin->data[2];
-	struct device * d = gateway_getdevice_shortaddr(zclin->message->SrcAddr);
-	if(d){
-		cmd.req.ieeeaddr = d->ieeeaddr;
-	}
-
-	//write(g_znpwfd, &cmd, sizeof(struct zcl_basic_status_cmd));
-
-	return 0;
-}
-*/
-
-int handle_basic_status(struct zclincomingmsg *zclin)
-{
-	struct zcl_basic_status_cmd cmd;
-	cmd.cmdid = ZCLBASICSTATUS;
-	//cmd.req.status= zclin->data[2];
-	cmd.req.status= 1;
-	struct device * d = gateway_getdevice_shortaddr(zclin->message->SrcAddr);
-	if(d){
-		cmd.req.ieeeaddr = d->ieeeaddr;
-	}
-	d->timestamp = time(NULL);
-	//if(d->status & DEVICE_APP_DEL) {
-	if(!(d->status & DEVICE_APP_ADD)) {
-		//d->status &= ~DEVICE_APP_DEL;
-		//sqlitedb_update_device_status(d);
-		device_set_status(d, DEVICE_APP_ADD);
-	}
-
-	//write(g_znpwfd, &cmd, sizeof(struct zcl_basic_status_cmd));
-
-	return 0;
-}
 
 int handle_onoff_state(struct zclincomingmsg *zclin)
 {

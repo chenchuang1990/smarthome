@@ -878,8 +878,10 @@ void event_recvznp(struct eventhub * hub, int fd){
 				}
 				//d->status &= ~DEVICE_APP_DEL;
 				//sqlitedb_update_device_status(d);
+				d->online = 1;
+				d->timestamp = time(NULL);
 				device_set_status(d, DEVICE_APP_ADD);
-
+				sqlitedb_update_device_online(d);
 				//add the devicename field
 				if(0 == strlen(d->devicename)) {
 					init_devicename(d);
@@ -1053,6 +1055,7 @@ void event_recvznp(struct eventhub * hub, int fd){
 				broadcast(buf, buflen);
 			}
 			break;
+		#if 0
 		case ZCLBASICSTATUS:
 			{
 				struct zclbasicstatus basic_status;
@@ -1062,7 +1065,6 @@ void event_recvznp(struct eventhub * hub, int fd){
 				broadcast(buf, buflen);			
 			}
 			break;
-		#if 0
 		case ZCLONOFFREPORT:
 			{
 				struct zclonoffreport onoff_report;

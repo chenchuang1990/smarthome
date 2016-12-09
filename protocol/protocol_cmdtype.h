@@ -161,6 +161,13 @@ struct __attribute__((packed))protocol_cmdtype_read_state {
 	unsigned char endpoint;
 };
 
+struct __attribute__((packed))protocol_cmdtype_report_online {
+	unsigned long long ieee;
+	unsigned int serialnum;
+	unsigned char endpoint;
+	unsigned char on;
+};
+
 /*
 struct __attribute__((packed))protocol_cmdtype_get_onoff_state_cmd{
 	int cmdid;

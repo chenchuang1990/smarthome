@@ -685,8 +685,6 @@ static uint8_t mtZdoSimpleDescRspCb(SimpleDescRspFormat_t *msg)
 
 			send_read_attr_cmd_with_unlock(d);
 		}
-		//printf("[mtZdoSimpleDescRspCb] unlock\n");
-		//pthread_mutex_unlock(&big_mutex);
 	}
 	else
 	{
@@ -1146,48 +1144,6 @@ static uint8_t mtZdoEndDeviceAnnceIndCb(EndDeviceAnnceIndFormat_t *msg)
 		} 
 	}
 		
-#if 0	
-	struct zcl_basic_status_cmd cmd;
-	cmd.cmdid = ZCLBASICSTATUS;
-	cmd.req.status= 1;	
-	cmd.req.ieeeaddr = d->ieeeaddr;
-	//d->timestamp = time(NULL);
-
-	write(g_znpwfd, &cmd, sizeof(struct zcl_basic_status_cmd));
-#endif	
-	//d->status |= DEVICE_ACTIVE;
-#if 0
-	if(d && !device_check_status(d, DEVICE_SEND_ATTR)){ 
-		zclReadCmd_t readcmd; 
-		readcmd.numAttr = 8;
-		readcmd.attrID[0] = ATTRID_BASIC_ZCL_VERSION;
-		readcmd.attrID[1] = ATTRID_BASIC_APPL_VERSION;
-		readcmd.attrID[2] = ATTRID_BASIC_STACK_VERSION;
-		readcmd.attrID[3] = ATTRID_BASIC_HW_VERSION;
-		readcmd.attrID[4] = ATTRID_BASIC_MANUFACTURER_NAME;
-		readcmd.attrID[5] = ATTRID_BASIC_MODEL_ID;
-		readcmd.attrID[6] = ATTRID_BASIC_DATE_CODE;         
-		readcmd.attrID[7] = ATTRID_BASIC_POWER_SOURCE;
-
-		//zcl_SendRead(message->DstEndpoint, message->SrcEndpoint, message->SrcAddr, ZCL_CLUSTER_ID_GEN_BASIC, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC,0,0);
-		printf("mtZdoEndDeviceAnnceIndCb:send read attribute cmd\n");
-		zcl_SendRead(1, 1, msg->SrcAddr, ZCL_CLUSTER_ID_GEN_BASIC, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC, 0, get_sequence());
-		device_set_status(d, DEVICE_SEND_ATTR);
-	}
-#endif
-	/*added on 0629*/
-	#if 0
-	if(d && !device_check_status(d, DEVICE_ACTIVE)) {
-		report_new_device(d);
-		device_set_status(d, DEVICE_ACTIVE);
-	}
-	#endif
-	/*printf("check DEVICE_ACTIVE\n");
-	if(d && device_check_status(d, DEVICE_ACTIVE)) {
-		printf("report new device\n");
-		report_new_device(d);
-		//device_set_status(d, DEVICE_ACTIVE);
-	}*/
 	
 	if(d && (((d->status & DEVICE_SEND_ACTIVEEP) == 0) || list_empty(&d->eplisthead))) {
 	//if(d && ((d->status & DEVICE_SEND_ACTIVEEP) == 0)) {
@@ -2098,11 +2054,7 @@ void appProcess(void * args)
 					struct protocol_cmdtype_identify_ieee identify_ieee;
 					int n = read(znprfd, &identify_ieee, sizeof(struct protocol_cmdtype_identify_ieee));
 					fprintf(stdout, "identify znp recv %d %d -------\n", n, sizeof(struct protocol_cmdtype_identify_ieee));
-					//pthread_mutex_lock(&big_mutex);
-					//printf("[zcl_down_cmd_identify] lock\n");
 					zcl_down_cmd_identify(identify_ieee.ieee,&identify_ieee.identify);
-					//printf("[zcl_down_cmd_identify] unlock\n");
-					//pthread_mutex_unlock(&big_mutex);
 				}
 				break;
 			case PROTOCOL_WARNING:
@@ -2110,11 +2062,7 @@ void appProcess(void * args)
 					struct protocol_cmdtype_warning_ieee warning_ieee;
 					int n = read(znprfd, &warning_ieee, sizeof(struct protocol_cmdtype_warning_ieee));
 					fprintf(stdout, "warning znp recv %d %d -------\n", n, sizeof(struct protocol_cmdtype_warning_ieee));
-					//pthread_mutex_lock(&big_mutex);
-					//printf("[zcl_down_cmd_warning] lock\n");
 					zcl_down_cmd_warning(warning_ieee.ieee, &warning_ieee.warning);
-					//printf("[zcl_down_cmd_warning] unlock\n");
-					//pthread_mutex_unlock(&big_mutex);
 				}
 				break;
 			case PROTOCOL_ONOFF:
@@ -2122,11 +2070,7 @@ void appProcess(void * args)
 					struct protocol_cmdtype_onoff_ieee onoff_ieee;
 					read(znprfd, &onoff_ieee, sizeof(struct protocol_cmdtype_onoff_ieee));
 					printf("[appProcess] PROTOCOL_ONOFF\n");
-					//pthread_mutex_lock(&big_mutex);
-					//printf("[zcl_down_cmd_onoff] lock\n");
 					zcl_down_cmd_onoff(&onoff_ieee);
-					//printf("[zcl_down_cmd_onoff] unlock\n");
-					//pthread_mutex_unlock(&big_mutex);
 				}
 				break;
 			case PROTOCOL_LEVEL_CTRL:
@@ -2134,11 +2078,7 @@ void appProcess(void * args)
 					struct protocol_cmdtype_level_ctrl_ieee level_ctrl_ieee;
 					read(znprfd, &level_ctrl_ieee, sizeof(struct protocol_cmdtype_level_ctrl_ieee));
 					printf("[appProcess] PROTOCOL_LEVEL_CTRL\n");
-					//pthread_mutex_lock(&big_mutex);
-					//printf("[zcl_down_cmd_level_ctrl] lock\n");
 					zcl_down_cmd_level_ctrl(&level_ctrl_ieee);
-					//printf("[zcl_down_cmd_level_ctrl] unlock\n");
-					//pthread_mutex_unlock(&big_mutex);
 				}
 				break;
 			case PROTOCOL_PERMIT_JOING:
@@ -2146,11 +2086,7 @@ void appProcess(void * args)
 					struct protocol_cmdtype_permit_joining permit_joining;
 					read(znprfd, &permit_joining, sizeof(struct protocol_cmdtype_permit_joining));
 					printf("[appProcess] PROTOCOL_PERMIT_JOING\n");
-					//pthread_mutex_lock(&big_mutex);
-					//printf("[zcl_down_cmd_permit_joining] lock\n");
 					zcl_down_cmd_permit_joining(&permit_joining);
-					//printf("[zcl_down_cmd_permit_joining] unlock\n");
-					//pthread_mutex_unlock(&big_mutex);
 				}
 				break;
 			case PROTOCOL_CONFIG_REPORT:
@@ -2158,11 +2094,7 @@ void appProcess(void * args)
 					struct protocol_cmdtype_config_reporting cfg_reporting;
 					read(znprfd, &cfg_reporting, sizeof(struct protocol_cmdtype_config_reporting));
 					printf("[appProcess] PROTOCOL_CONFIG_REPORT\n");
-					//pthread_mutex_lock(&big_mutex);
-					//printf("[zcl_down_cmd_config_reporting] lock\n");
 					zcl_down_cmd_config_reporting(&cfg_reporting);
-					//printf("[zcl_down_cmd_config_reporting] unlock\n");
-					//pthread_mutex_unlock(&big_mutex);
 				}
 				break;
 			#if 0

@@ -1001,11 +1001,6 @@ printf("zcl_proccessincomingmessage..\n");
 				handle_outlet_devicename(d);
 			}
 			sqlitedb_update_device_attr(d);
-			//printf("receive basic req response\n");
-			//printf("data[0]:%02x, data[1]:%02x\n", zclmessage.data[0], zclmessage.data[1]);
-			/*if((0 == zclmessage.data[0]) && (0 == zclmessage.data[1]))
-				handle_basic_status(&zclmessage);*/
-				//report_basic_status(&zclmessage);
 			break;
 		case ZCL_CLUSTER_ID_GEN_ON_OFF:
 			handle_onoff_state(&zclmessage);
