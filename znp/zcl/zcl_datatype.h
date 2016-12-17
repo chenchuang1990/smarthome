@@ -3,7 +3,7 @@
 
 #define ZCLZONEENROLLREQ    0x00000001
 #define ZCLZONECHANGENOTIFICATION 0x00000002
-#define ZCLBASICSTATUS 0x00000003
+//#define ZCLBASICSTATUS 0x00000003
 #define ZCLONOFFREPORT 0x00000004
 
 
@@ -123,6 +123,7 @@ struct __attribute__((packed))zcl_levlctl_default_response_cmd {
 };
 
 
+#if 0
 struct __attribute__((packed))zclbasicstatus {
 	unsigned long long ieeeaddr;
 	unsigned char status;
@@ -132,6 +133,7 @@ struct __attribute__((packed))zcl_basic_status_cmd {
 	unsigned int cmdid;
 	struct zclbasicstatus req;
 };
+#endif
 
 struct __attribute__((packed))zclonoffreport {
 	unsigned long long ieeeaddr;

@@ -347,6 +347,7 @@ int zclss_handlespecificcommands( struct zclincomingmsg * msg){
 }
 
 int zclss_handleincoming( struct zclincomingmsg * zclincomingmsg){
+	printf("zclss_handleincoming...\n");
 	int result = -1;
 #if defined ( INTER_PAN )
 	//todo

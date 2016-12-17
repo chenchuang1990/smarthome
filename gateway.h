@@ -63,6 +63,7 @@ struct device{
 	time_t timestamp;
 	int accesscnt;
 	int record;
+	unsigned char online;
 };
 
 struct gateway{
@@ -84,7 +85,7 @@ struct device * device_create(unsigned long long deviceieee, unsigned short shor
 struct device * device_create2(unsigned long long ieee, unsigned short shortaddr,char * name, unsigned char status,
 		unsigned char zclversion, unsigned char applicationversion, 
 		unsigned char stackversion, unsigned char hwversion,
-		char * manufacturername, char * modelidentifier, char * datecode);
+		char * manufacturername, char * modelidentifier, char * datecode, unsigned char online);
 
 void device_addendpoint(struct device * d, struct endpoint * ep);
 unsigned char device_getepcount(struct device * d);
