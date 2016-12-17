@@ -64,7 +64,7 @@ int main()
 	}
 	//unsigned long long mac = toolkit_getmac();
 	if(sqlitedb_load_gateway_name(DBPATH, mac)) { 
-		gateway_init(getgateway(), mac, "网关", 1, 2);
+		gateway_init(getgateway(), mac, "网关", BOX_VERSION, PROTOCOL_VERSION);
 		sqlitedb_add_gateway(mac, "网关"); 
 	}
 	sqlitedb_load_device();

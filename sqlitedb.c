@@ -11,7 +11,7 @@
 #define GATEWAYTABLENAME "gateway"
 #define DEVICETABLENAME "device"
 
-#define GATEWAY_VERSION 1
+//#define GATEWAY_VERSION 1
 
 struct sqlitedb{ 
 	sqlite3 * db;
@@ -105,7 +105,7 @@ int sqlitedb_load_gateway_name(char * filepath, unsigned long long mac){
 			text  = sqlite3_column_text (stmt, 0);
 			memcpy(gatewayname, text, bytes);
 
-			gateway_init(getgateway(), mac, gatewayname, GATEWAY_VERSION, 2);
+			gateway_init(getgateway(), mac, gatewayname, BOX_VERSION, PROTOCOL_VERSION);
 
 			result = 0;
 		}else{

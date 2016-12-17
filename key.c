@@ -79,9 +79,9 @@ void *key_down_count(void *arg)
 			ledcnt = PERMIT_JOINING_DURATION;
 			if(count++ > 30) {
 				clear_flag = 1;
-				ioctl(led_fd, LED_OFF, LED_W);
+				ioctl(led_fd, LED_OFF, LED_Z);
 				usleep(500000);
-				ioctl(led_fd, LED_ON, LED_W);
+				ioctl(led_fd, LED_ON, LED_Z);
 				usleep(500000);
 			}
 		}

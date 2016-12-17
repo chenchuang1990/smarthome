@@ -615,9 +615,27 @@ int zcl_pross_read_levelctl_rsp(struct zclincomingmsg *msg)
 	cmd.req.serialnum = msg->zclframehdr.transseqnum;
 
 	struct endpoint *ep = gateway_get_endpoint(d->ieeeaddr, msg->message->SrcEndpoint);
+#if 0
 	if(ep && (ep->simpledesc.device_state != cmd.req.cur_level)) {
 		write(g_znpwfd, &cmd, sizeof(struct zcl_read_levelctl_rsp_cmd));
 		ep->simpledesc.device_state = cmd.req.cur_level;
+	}
+#endif
+	if(ep) {
+		if(ep->simpledesc.device_state != cmd.req.cur_level) {
+			ep->simpledesc.device_state = cmd.req.cur_level;
+			write(g_znpwfd, &cmd, sizeof(struct zcl_read_levelctl_rsp_cmd));
+			sqlitedb_update_device_state(cmd.req.ieeeaddr, cmd.req.endpoint, cmd.req.cur_level);
+			if(d->record > 0) {
+				d->record--;
+				printf("d->record:%d\n", d->record);
+			}
+		}
+		else if(d->record > 0) {
+			write(g_znpwfd, &cmd, sizeof(struct zcl_read_levelctl_rsp_cmd));
+			d->record--;
+			printf("d->record:%d\n", d->record);
+		}
 	}
 	return 0;
 }

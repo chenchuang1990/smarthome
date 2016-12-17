@@ -338,7 +338,7 @@ int check_device_timeout(struct device *d)
 		return 0;
 }
 
-void *send_read_onoff(void *args)
+void *send_read_state(void *args)
 {
 	struct gateway *gw = getgateway();
 	struct list_head *pos, *n, *ep_pos, *ep_n;
@@ -351,7 +351,7 @@ void *send_read_onoff(void *args)
 	//zclReadReportCfgCmd_t *read_report;
 	
 	readcmd.numAttr = 1;
-	readcmd.attrID[0] = 0;
+	readcmd.attrID[0] = 0; // OnOff or CurrentLevel
 	//readcmd.attrID[1] = 0x0001;
 	//readcmd.attrID[2] = 0x0010;
 	//readcmd.attrID[3] = 0x0011;
@@ -377,10 +377,9 @@ void *send_read_onoff(void *args)
 	while(1) {
 		if(initDone) {
 			pthread_mutex_lock(&big_mutex);
-			//printf("[send_read_onoff] lock\n");
 			list_for_each_safe(pos, n, &gw->head) { 
 			if(!pos || !n) {
-				printf("[send_read_onoff]somewhere is delete device list, repoll them\n");
+				printf("[send_read_state]somewhere is delete device list, repoll them\n");
 				break;
 			}
 				d = list_entry(pos, struct device, list); 
@@ -391,7 +390,7 @@ void *send_read_onoff(void *args)
 					need_delay = 1;
 					list_for_each_safe(ep_pos, ep_n, &d->eplisthead) {
 						if(!ep_pos || !ep_n) {
-							printf("[send_read_onoff]somewhere is delete ep list, repoll them\n");
+							printf("[send_read_state]somewhere is delete ep list, repoll them\n");
 							break;
 						}
 						ep = list_entry(ep_pos, struct endpoint, list);
@@ -405,7 +404,7 @@ void *send_read_onoff(void *args)
 							printf("send read cmd endpoint:%d\n", ep->simpledesc.simpledesc.Endpoint);
 							//#if 0
 							if(check_device_timeout(d)) {
-								printf("send_read_onoff:d->accesscnt = 0\n");
+								printf("[send_read_state]:d->accesscnt = 0\n");
 								d->accesscnt = 0;
 								continue;
 							}
@@ -419,10 +418,10 @@ void *send_read_onoff(void *args)
 							unsigned char epnum = ep->simpledesc.simpledesc.Endpoint;
 							unsigned short shortaddr = d->shortaddr;
 							pthread_mutex_unlock(&big_mutex);
-							printf("[send_read_onoff] zcl_SendRead start\n");
+							printf("[send_read_state] zcl_SendRead start\n");
 							//zcl_SendRead(1, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, cluster_id, &readcmd, ZCL_FRAME_CLIENT_SERVER_DIR,0,get_sequence());
-							zcl_SendRead(1, epnum, shortaddr, cluster_id, &readcmd, ZCL_FRAME_CLIENT_SERVER_DIR,0,get_sequence());
-							printf("[send_read_onoff] zcl_SendRead end\n");
+							zcl_SendRead(1, epnum, shortaddr, cluster_id, &readcmd, ZCL_FRAME_CLIENT_SERVER_DIR, 0, get_sequence());
+							printf("[send_read_state] zcl_SendRead end\n");
 							pthread_mutex_lock(&big_mutex);
 						}
 					}					
@@ -434,7 +433,6 @@ void *send_read_onoff(void *args)
 					//printf("d->noneedcheck:%d\n", d->noneedcheck);
 				}
 			}
-			//printf("[send_read_onoff] unlock\n");
 			pthread_mutex_unlock(&big_mutex);
 			if(need_delay) {
 				sleep(3);
@@ -496,12 +494,12 @@ void *check_response_timeout(void *args)
 						}
 					}
 					else {
-						if(d->online && diff > 3600) {
+						if(d->online && diff > 3700) {
 							printf("offline\n");
 							d->online = 0;
 							need_update = 1;
 						}
-						else if(!d->online && diff <= 3600){
+						else if(!d->online && diff <= 3700){
 							printf("online\n");
 							d->online = 1;
 							need_update = 1;
@@ -546,6 +544,13 @@ static int need_send_request(struct device *d)
 	return 1;
 }
 
+unsigned char basic_trans_num = 1;
+
+unsigned char get_basic_squence(void)
+{
+	return basic_trans_num++;
+}
+
 void *send_basic_request(void *args)
 {
 	struct gateway *gw = getgateway();
@@ -584,12 +589,19 @@ void *send_basic_request(void *args)
 				}
 				if(device_check_status(d, DEVICE_APP_ADD) && (!device_check_status(d, DEVICE_LEAVE_NET))) {
 					if(need_send_request(d)) {
-						dstaddr = d->shortaddr;
-						pthread_mutex_unlock(&big_mutex);
-						printf("[send_basic_request] ieee:%llx\n", d->ieeeaddr);
-						zcl_SendRead(1, 1, dstaddr, ZCL_CLUSTER_ID_GEN_BASIC, &readcmd, 0, 0, get_sequence());
-						sleep(9);
-						pthread_mutex_lock(&big_mutex);
+						struct endpoint *ep = list_entry(d->eplisthead.next, struct endpoint, list);
+						if(ep) {
+							dstaddr = d->shortaddr;
+							unsigned char epnum = ep->simpledesc.simpledesc.Endpoint;
+							pthread_mutex_unlock(&big_mutex);
+							printf("[send_basic_request] ieee:%llx\n", d->ieeeaddr);
+							zcl_SendRead(1, epnum, dstaddr, ZCL_CLUSTER_ID_GEN_BASIC, &readcmd, 0, 0, get_basic_squence());
+							sleep(9);
+							pthread_mutex_lock(&big_mutex);
+						}
+						else {
+							printf("WARNING:[send_basic_request]fuck ep is NULL!!!\n");
+						}
 					}
 				}
 			}
@@ -603,7 +615,7 @@ void send_period_request(void)
 {
 	pthread_t basic_tid;
 	pthread_t onoff_tid;
-	pthread_create(&onoff_tid, NULL, send_read_onoff, NULL);
+	pthread_create(&onoff_tid, NULL, send_read_state, NULL);
 	pthread_create(&basic_tid, NULL, send_basic_request, NULL);
 }
 //#endif

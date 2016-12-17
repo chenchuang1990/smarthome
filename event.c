@@ -378,11 +378,6 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 						 } 
 						 ep->simpledesc.device_state = level_ctrl_ieee_cmd.level_ctrl_ieee.level_ctrl_cmd.move2level.level;
 					     sendnonblocking(g_main_to_znp_write_fd, &level_ctrl_ieee_cmd, sizeof(struct protocol_cmdtype_level_ctrl_ieee_cmd));
-
-						 struct device * d = gateway_getdevice(getgateway(), level_ctrl_ieee_cmd.level_ctrl_ieee.ieee);
-						 d->accesscnt = 1;
-						 d->timestamp = time(NULL);
-						 printf("d->accesscnt:%d\n", d->accesscnt);
 				     }
 					 break;
 				case PERMIT_JOINING:
@@ -463,7 +458,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 				     break;
 				case READ_ONOFF_CMD:
 					{
-						//unsigned char onoff = 0;
+						printf("[event_recvmsg] READ_ONOFF_CMD\n");
 						struct protocol_cmdtype_read_state onoff_state;
 						//struct list_head *pos, *n;
 						//struct device *other_dev;
@@ -528,6 +523,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 				case READ_LEVEL_CMD:
 					{
 						//unsigned char result = 1, level = 0;
+						printf("[event_recvmsg] READ_LEVEL_CMD\n");
 						struct protocol_cmdtype_read_state level_state;
 						//struct list_head *pos, *n;
 						//struct device *other_dev;
@@ -545,29 +541,20 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 							if(0 == level_state.endpoint) {
 								if(d->accesscnt-- <= 0)
 									d->accesscnt = 0;
-								printf("exit count:%d\n", d->accesscnt);
+                                c->cur_dev = NULL;
+								printf("------exit count:%d-----\n", d->accesscnt);
 								break;
 							}
+							//else if (0xff == onoff_state.endpoint && 1 == d->noneedcheck) {
 							else if (0xff == level_state.endpoint) {
+								if((c->cur_dev == d) && (c->type == CONNSOCKETCLIENT))
+									break;
 								d->accesscnt++;
-								printf("enter count:%d\n", d->accesscnt);
+								printf("++++++enter count:%d++++++\n", d->accesscnt);
+								c->cur_dev = d;
+								d->record = d->activeep.ActiveEPCount;
 								d->timestamp = time(NULL);
-								#if 0
-								list_for_each_safe(pos, n, &getgateway()->head){ 
-									other_dev = list_entry(pos, struct device, list); 
-									if(other_dev->noneedcheck == 0 && other_dev->ieeeaddr != d->ieeeaddr){
-										other_dev->noneedcheck = 1;
-									}
-								}
-								#endif
 							}
-							#if 0
-							struct endpoint *ep = device_get_endpoint(d, level_state.endpoint);					
-							if(ep) {
-						    	onoff = ep->simpledesc.device_state;
-								result = 0;
-							}
-							#endif
 						}
 						else {
 							fprintf(stdout, "READ_LEVEL_CMD:device has been deleted\n");
@@ -611,11 +598,19 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 							struct device *d = gateway_getdevice(getgateway(), test.ieee);
 							if(d) {
 								printf("gateway_get_endpoint\n");
-								zcl_SendConfigReportCmd(1, 1, d->shortaddr, 0x0006, &CfgReportCmd, 0, 1, get_sequence());
+								//zcl_SendConfigReportCmd(1, 1, d->shortaddr, 0x0006, &CfgReportCmd, 0, 1, get_sequence());
 							}						
 							break;
 						}
 						case 2:
+						{
+							zclReadCmd_t readcmd; 
+							readcmd.numAttr = 1;
+							readcmd.attrID[0] = ATTRID_BASIC_ZCL_VERSION;
+
+							
+						}
+						case 3:
 						{
 							printf("send zdoIeeeAddrReq\n");
 							IeeeAddrReqFormat_t ieee_req;
@@ -624,10 +619,8 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 							ieee_req.ReqType = 0;
 							ieee_req.StartIndex = 0;
 							zdoIeeeAddrReq(&ieee_req);						
-							break;
-						}
-						case 3:
-						{
+							//break;
+							
 							printf("zdo bind req\n");
 							printf("src ieee: %llx\n", test_ieee);
 							//unsigned char *p;

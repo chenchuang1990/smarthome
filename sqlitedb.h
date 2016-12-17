@@ -3,6 +3,9 @@
 
 #define DBPATH "./gateway.db"
 
+#define BOX_VERSION      	1
+#define PROTOCOL_VERSION	5
+
 struct sqlitedb;
 
 struct sqlitedb * sqlitedb_create(char * filepath);
