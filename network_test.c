@@ -14,6 +14,8 @@
 #include <errno.h>
 #include <pthread.h>
 #include <string.h>
+#include <time.h>
+
 #include "key.h"
 #include "gateway.h"
 #include "zcl.h"
@@ -22,9 +24,14 @@
 #include "zcl_datatype.h"
 #include "zcl_ha.h"
 #include "ceconf.h"
+#include "sqlitedb.h"
+#include "protocol_cmd_header.h"
+#include "socket.h"
 
 
 #define _USE_DNS
+//#define _GNU_SOURCE
+
 #define MAX_NO_PACKETS  1
 #define ICMP_HEADSIZE 8 
 #define PACKET_SIZE     4096
@@ -331,10 +338,10 @@ int check_device_timeout(struct device *d)
 		return 0;
 }
 
-void *send_read_onoff(void *args)
+void *send_read_state(void *args)
 {
 	struct gateway *gw = getgateway();
-	struct list_head * pos, *n, *ep_pos, *ep_n;
+	struct list_head *pos, *n, *ep_pos, *ep_n;
 	struct device *d;
 	struct endpoint *ep;
 	int need_delay = 0;
@@ -344,7 +351,7 @@ void *send_read_onoff(void *args)
 	//zclReadReportCfgCmd_t *read_report;
 	
 	readcmd.numAttr = 1;
-	readcmd.attrID[0] = 0;
+	readcmd.attrID[0] = 0; // OnOff or CurrentLevel
 	//readcmd.attrID[1] = 0x0001;
 	//readcmd.attrID[2] = 0x0010;
 	//readcmd.attrID[3] = 0x0011;
@@ -371,14 +378,21 @@ void *send_read_onoff(void *args)
 		if(initDone) {
 			pthread_mutex_lock(&big_mutex);
 			list_for_each_safe(pos, n, &gw->head) { 
+			if(!pos || !n) {
+				printf("[send_read_state]somewhere is delete device list, repoll them\n");
+				break;
+			}
 				d = list_entry(pos, struct device, list); 
 				if(d && device_check_status(d, DEVICE_APP_ADD) && 
 					(!device_check_status(d, DEVICE_LEAVE_NET)) && (d->accesscnt > 0)) {	
 					printf("d->accesscnt = %d\n", d->accesscnt);
 					//printf("send read cmd ieee:%llx\n", d->ieeeaddr);
 					need_delay = 1;
-					//d->timestamp = time(NULL);
 					list_for_each_safe(ep_pos, ep_n, &d->eplisthead) {
+						if(!ep_pos || !ep_n) {
+							printf("[send_read_state]somewhere is delete ep list, repoll them\n");
+							break;
+						}
 						ep = list_entry(ep_pos, struct endpoint, list);
 						if(ep) {							
 							if((ep->simpledesc.simpledesc.DeviceID != ZCL_HA_DEVICEID_MAINS_POWER_OUTLET) && 
@@ -390,7 +404,7 @@ void *send_read_onoff(void *args)
 							printf("send read cmd endpoint:%d\n", ep->simpledesc.simpledesc.Endpoint);
 							//#if 0
 							if(check_device_timeout(d)) {
-								printf("send_read_onoff:DEVICE_LEAVE_NET\n");
+								printf("[send_read_state]:d->accesscnt = 0\n");
 								d->accesscnt = 0;
 								continue;
 							}
@@ -401,22 +415,15 @@ void *send_read_onoff(void *args)
 								cluster_id = ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL;
 							else
 								cluster_id = ZCL_CLUSTER_ID_GEN_ON_OFF;*/
-							
-							zcl_SendRead(1, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, cluster_id, &readcmd, ZCL_FRAME_CLIENT_SERVER_DIR,0,get_sequence());
+							unsigned char epnum = ep->simpledesc.simpledesc.Endpoint;
+							unsigned short shortaddr = d->shortaddr;
+							pthread_mutex_unlock(&big_mutex);
+							printf("[send_read_state] zcl_SendRead start\n");
+							//zcl_SendRead(1, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, cluster_id, &readcmd, ZCL_FRAME_CLIENT_SERVER_DIR,0,get_sequence());
+							zcl_SendRead(1, epnum, shortaddr, cluster_id, &readcmd, ZCL_FRAME_CLIENT_SERVER_DIR, 0, get_sequence());
+							printf("[send_read_state] zcl_SendRead end\n");
+							pthread_mutex_lock(&big_mutex);
 						}
-						#if 0
-						for(i = 0; i < ep->simpledesc.simpledesc.NumInClusters; i++) {
-							if(ZCL_CLUSTER_ID_GEN_ON_OFF == ep->simpledesc.simpledesc.InClusterList[i]) {
-								zcl_SendRead(1, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, ZCL_CLUSTER_ID_GEN_ON_OFF, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC,0,0);
-								//zcl_SendRead(2, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC,0,get_sequence());
-								//zcl_SendReadReportCfgCmd(2, ep->simpledesc.simpledesc.Endpoint, d->shortaddr, ZCL_CLUSTER_ID_GEN_ON_OFF, read_report, ZCL_CLUSTER_ID_GEN_BASIC, 0, get_sequence());
-								printf("[send_read_onoff]ieee:%llx\n", d->ieeeaddr);
-								//sleep(2);
-								//sleep(5);
-								break;
-							}
-						}
-						#endif
 					}					
 					//sleep(interval);
 				}
@@ -426,7 +433,6 @@ void *send_read_onoff(void *args)
 					//printf("d->noneedcheck:%d\n", d->noneedcheck);
 				}
 			}
-			//printf("[send_read_onoff] unlock\n");
 			pthread_mutex_unlock(&big_mutex);
 			if(need_delay) {
 				sleep(3);
@@ -438,66 +444,178 @@ void *send_read_onoff(void *args)
 }
 
 
-#if 0
+static int emergency_device(struct device *d)
+{
+	struct list_head *pos, *n;
+	struct endpoint *ep;
+
+	list_for_each_safe(pos, n, &d->eplisthead) {
+		ep = list_entry(pos, struct endpoint, list);
+		printf("[emergency_device] zonetype: 0x%04x\n", ep->simpledesc.zonetype);
+		if(SS_IAS_ZONE_TYPE_KEY_FOB == ep->simpledesc.zonetype || 
+			ZCL_HA_DEVICEID_MAINS_POWER_OUTLET == ep->simpledesc.simpledesc.DeviceID || 
+			ZCL_HA_DEVICEID_ON_OFF_OUTPUT == ep->simpledesc.simpledesc.DeviceID ||
+			ZCL_HA_DEVICEID_IAS_WARNING_DEVICE == ep->simpledesc.simpledesc.DeviceID ||
+			ZCL_HA_DEVICEID_SHADE == ep->simpledesc.simpledesc.DeviceID)
+			return 1;
+	}
+	return 0;
+}
+
+//#if 0
+void *check_response_timeout(void *args)
+{
+	struct device *d;
+	struct list_head *pos, *n;
+	time_t t, diff;
+	int need_update = 0;
+	
+	while(1) {
+		if(initDone) {
+			sleep(9);
+			pthread_mutex_lock(&big_mutex);
+			list_for_each_safe(pos, n, &getgateway()->head) { 
+				d = list_entry(pos, struct device, list); 
+				if(device_check_status(d, DEVICE_APP_ADD) && (!device_check_status(d, DEVICE_LEAVE_NET))) {
+					t = time(NULL);
+					diff = t - d->timestamp;
+					printf("[check_response_timeout] ieee:%llx online = %d, diff = %ld\n", d->ieeeaddr,d->online, diff);
+					if(emergency_device(d)) {
+						printf("emergency_device\n");
+						if(d->online && diff > 300) {
+							printf("offline\n");
+							d->online = 0;
+							need_update = 1;
+						}
+						else if(!d->online && diff <= 300){
+							printf("online\n");
+							d->online = 1;
+							need_update = 1;
+						}
+					}
+					else {
+						if(d->online && diff > 3700) {
+							printf("offline\n");
+							d->online = 0;
+							need_update = 1;
+						}
+						else if(!d->online && diff <= 3700){
+							printf("online\n");
+							d->online = 1;
+							need_update = 1;
+						}
+					}
+					if(1 == need_update){
+						need_update = 0;
+						unsigned char sbuf[32] = {0};
+						struct protocol_cmdtype_report_online online;
+						unsigned int len;
+						online.ieee = d->ieeeaddr;
+						online.on = d->online;
+						sqlitedb_update_device_online(d);
+						len = protocol_encode_report_online(sbuf, &online);
+						printf("=============\n============\n");
+						broadcast(sbuf, len);
+					}
+				}
+			}
+			pthread_mutex_unlock(&big_mutex);
+		}
+	}
+	return NULL;
+}
+
+
+static int need_send_request(struct device *d)
+{
+	struct list_head *pos, *n;
+	struct endpoint *ep;
+
+	list_for_each_safe(pos, n, &d->eplisthead) {
+		if(!pos || !n) {
+			return 0;
+		}
+		ep = list_entry(pos, struct endpoint, list);
+		if(((ZCL_HA_DEVICEID_IAS_ZONE == ep->simpledesc.simpledesc.DeviceID) &&
+			(strstr(d->modelidentifier, "A01") == NULL)) || 
+			(ZCL_HA_DEVICEID_IAS_ANCILLARY_CONTROL_EQUIPMENT == ep->simpledesc.simpledesc.DeviceID))
+			return 0;
+	}
+	return 1;
+}
+
+unsigned char basic_trans_num = 1;
+
+unsigned char get_basic_squence(void)
+{
+	return basic_trans_num++;
+}
+
 void *send_basic_request(void *args)
 {
 	struct gateway *gw = getgateway();
 	struct list_head * pos, *n;
 	struct device *d;
-	int count, delay_s, period;
 	zclReadCmd_t readcmd; 
-	struct zcl_basic_status_cmd cmd;
+	pthread_t check_tid;
+	unsigned short dstaddr;
 
 	readcmd.numAttr = 1;
 	readcmd.attrID[0] = ATTRID_BASIC_ZCL_VERSION;
 	
-	cmd.cmdid = ZCLBASICSTATUS;
-
+	printf("send_basic_request...\n");
+	pthread_mutex_lock(&big_mutex);
 	list_for_each_safe(pos, n, &gw->head) { 
 		d = list_entry(pos, struct device, list); 
-		if((!device_check_status(d, DEVICE_APP_DEL)) && (!device_check_status(d, DEVICE_LEAVE_NET))) {
-			d->timestamp = time(NULL);
+		if(device_check_status(d, DEVICE_APP_ADD) && (!device_check_status(d, DEVICE_LEAVE_NET))) {
+			//d->timestamp = time(NULL);
+			if(d->online)
+				d->timestamp = time(NULL);
 		}
 	}
+	pthread_mutex_unlock(&big_mutex);
 
+	pthread_create(&check_tid, NULL, check_response_timeout, NULL);
 	while(1) {
 		if(initDone) {
-			if((period = get_access_period()) > 5) {
-				count = gateway_get_active_device_count();
-				if(count > 0) {
-					if(count > 30)
-						printf("warning: device is too much\n");
-					delay_s = period / count + 1;
-					list_for_each_safe(pos, n, &gw->head) { 
-						d = list_entry(pos, struct device, list); 
-						if((!device_check_status(d, DEVICE_APP_DEL)) && (!device_check_status(d, DEVICE_LEAVE_NET))) {
-							zcl_SendRead(1, 1, d->shortaddr, ZCL_CLUSTER_ID_GEN_BASIC, &readcmd, ZCL_CLUSTER_ID_GEN_BASIC,0,get_sequence());
-							printf("[send_basic_request]ieee:%llx\n", d->ieeeaddr);
-							if(check_device_timeout(d)) {
-								printf("check_device_timeout\n");
-								device_set_status(d, DEVICE_APP_DEL);								
-								
-								cmd.req.status= 0;
-								cmd.req.ieeeaddr = d->ieeeaddr;
-
-								write(g_znpwfd, &cmd, sizeof(struct zcl_basic_status_cmd));
-							}
-							sleep(delay_s);
+			sleep(10);
+			printf("[send_basic_request] top poll\n");
+			pthread_mutex_lock(&big_mutex);
+			list_for_each_safe(pos, n, &getgateway()->head) { 
+				d = list_entry(pos, struct device, list); 
+				if(!pos || !n) {
+					printf("[send_basic_request]somewhere is delete ep list, repoll them\n");
+					break;
+				}
+				if(device_check_status(d, DEVICE_APP_ADD) && (!device_check_status(d, DEVICE_LEAVE_NET))) {
+					if(need_send_request(d)) {
+						struct endpoint *ep = list_entry(d->eplisthead.next, struct endpoint, list);
+						if(ep) {
+							dstaddr = d->shortaddr;
+							unsigned char epnum = ep->simpledesc.simpledesc.Endpoint;
+							pthread_mutex_unlock(&big_mutex);
+							printf("[send_basic_request] ieee:%llx\n", d->ieeeaddr);
+							zcl_SendRead(1, epnum, dstaddr, ZCL_CLUSTER_ID_GEN_BASIC, &readcmd, 0, 0, get_basic_squence());
+							sleep(9);
+							pthread_mutex_lock(&big_mutex);
+						}
+						else {
+							printf("WARNING:[send_basic_request]fuck ep is NULL!!!\n");
 						}
 					}
 				}
 			}
+			pthread_mutex_unlock(&big_mutex);
 		}
-		sleep(5);
 	}
 	return NULL;
 }
-#endif
+//#endif
 void send_period_request(void)
 {
-	//pthread_t basic_tid;
+	pthread_t basic_tid;
 	pthread_t onoff_tid;
-	pthread_create(&onoff_tid, NULL, send_read_onoff, NULL);
-	//pthread_create(&basic_tid, NULL, send_basic_request, NULL);
+	pthread_create(&onoff_tid, NULL, send_read_state, NULL);
+	pthread_create(&basic_tid, NULL, send_basic_request, NULL);
 }
 //#endif

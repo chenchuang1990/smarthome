@@ -299,6 +299,7 @@ ZStatus_t zcl_sendcommand( uint8 srcEP, uint8 dstEp, uint16 dstaddr,
 		req.Len = msgLen;
 		memcpy(req.Data, msgBuf, msgLen);
 		free(msgBuf);
+		printf("[zcl_sendcommand]sendcmd...\n");
 		sendcmd((unsigned char *)&req, AF_DATA_REQUEST);
 
 	}
@@ -652,9 +653,10 @@ ZStatus_t zcl_SendRead( uint8 srcEP, uint8 dstEp, uint16 dstAddr,
 			*pBuf++ = LO_UINT16( readCmd->attrID[i] );
 			*pBuf++ = HI_UINT16( readCmd->attrID[i] );
 		}
-
+		printf("[zcl_SendRead]zcl_sendcommand start\n");
 		status = zcl_sendcommand( srcEP, dstEp, dstAddr, clusterID, ZCL_CMD_READ, FALSE,
 				direction, disableDefaultRsp, 0, seqNum, dataLen, buf );
+		printf("[zcl_SendRead]zcl_sendcommand end\n");
 		free( buf );
 	}
 	else
@@ -952,7 +954,7 @@ int zcl_proccessincomingmessage(IncomingMsgFormat_t * message){
 	if(message->Len == 0){
 		return 1;
 	}
-
+printf("zcl_proccessincomingmessage..\n");
 	struct zclincomingmsg zclmessage;
 	memset(&zclmessage, 0, sizeof(struct zclincomingmsg));
 	zclmessage.message = message;
@@ -999,11 +1001,6 @@ int zcl_proccessincomingmessage(IncomingMsgFormat_t * message){
 				handle_outlet_devicename(d);
 			}
 			sqlitedb_update_device_attr(d);
-			//printf("receive basic req response\n");
-			//printf("data[0]:%02x, data[1]:%02x\n", zclmessage.data[0], zclmessage.data[1]);
-			/*if((0 == zclmessage.data[0]) && (0 == zclmessage.data[1]))
-				handle_basic_status(&zclmessage);*/
-				//report_basic_status(&zclmessage);
 			break;
 		case ZCL_CLUSTER_ID_GEN_ON_OFF:
 			handle_onoff_state(&zclmessage);

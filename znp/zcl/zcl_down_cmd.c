@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
+#include <pthread.h>
 #include "zcl_down_cmd.h"
 #include "zcl_general.h"
 #include "gateway.h"
@@ -16,50 +17,66 @@
 
 unsigned char trans_seq_num;
 
+extern pthread_mutex_t big_mutex;
+
+
 unsigned char get_sequence(void)
 {
 	return trans_seq_num++;
 }
 
 void zcl_down_cmd_identify(unsigned long long ieee, struct protocol_cmdtype_identify * identify){ 
+	pthread_mutex_lock(&big_mutex);
+	printf("[zcl_down_cmd_identify] lock\n");
 	struct device * d = gateway_getdevice(getgateway(), ieee);
 	if(d){
 		fprintf(stdout, " **identify endpoint %d\n", identify->endpoint);
 		fprintf(stdout, " **identify nwkwork %d\n", d->shortaddr);
-		zclGeneral_SendIdentify(APP_DEVICETYPEID_SS_ENDPOINT, 
+		unsigned short shortaddr = d->shortaddr;
+		printf("[zcl_down_cmd_identify] unlock\n");
+		pthread_mutex_unlock(&big_mutex);
+		zclGeneral_SendIdentify(APP_DEVICETYPEID_SS_ENDPOINT, identify->endpoint,
+				shortaddr, IDENTYFYTIME, 0, identify->serialnum);
+		/*zclGeneral_SendIdentify(APP_DEVICETYPEID_SS_ENDPOINT, 
 				identify->endpoint,
 				d->shortaddr,
-				IDENTYFYTIME, 0, identify->serialnum);
+				IDENTYFYTIME, 0, identify->serialnum);*/
+		
+	}
+	else {
+		printf("[zcl_down_cmd_identify] unlock\n");
+		pthread_mutex_unlock(&big_mutex);
 	}
 }
 
 void zcl_down_cmd_warning(unsigned long long ieee, struct protocol_cmdtype_warning* warning){ 
-	struct endpoint * dstep = gateway_get_endpoint(ieee, warning->endpoint);
-
-	if(dstep){
-		/*fprintf(stdout, " **warning endpoint %d\n", warning->endpoint);
-		fprintf(stdout, " **warning warnmode %d\n", warning->start_warning.warningmessage.warningbits.warnMode);
-		fprintf(stdout, " **warning warnstrobe %d\n", warning->start_warning.warningmessage.warningbits.warnStrobe);
-		fprintf(stdout, " **warning warnSirenlevel%d\n", warning->start_warning.warningmessage.warningbits.warnSirenLevel);
-		fprintf(stdout, " **warning warningDuration %d\n", warning->start_warning.warningDuration);
-		fprintf(stdout, " **warning strobeDutyCycle%d\n", warning->start_warning.strobeDutyCycle);
-		fprintf(stdout, " **warning strobeLevel%d\n", warning->start_warning.strobeLevel);*/
+	pthread_mutex_lock(&big_mutex);
+	printf("[zcl_down_cmd_warning] lock\n");
+	struct device * d = gateway_getdevice(getgateway(), ieee);
+	if(d){
+		unsigned short shortaddr = d->shortaddr;		
+		printf("[zcl_down_cmd_warning] unlock\n");
+		pthread_mutex_unlock(&big_mutex);
 		zclss_send_ias_wd_start_warning_cmd(APP_DEVICETYPEID_SS_ENDPOINT, 
-				warning->endpoint,
-				dstep->simpledesc.simpledesc.NwkAddr,
-				&warning->start_warning,
-				0, warning->serialnum);
+				warning->endpoint, shortaddr, &warning->start_warning, 0, warning->serialnum);
+	}
+	else {
+		printf("[zcl_down_cmd_warning] unlock\n");
+		pthread_mutex_unlock(&big_mutex);
 	}
 }
 
 void zcl_down_cmd_onoff(struct protocol_cmdtype_onoff_ieee * onoff){
+	pthread_mutex_lock(&big_mutex);
+	printf("[zcl_down_cmd_onoff] lock\n");
 	struct device * d = gateway_getdevice(getgateway(), onoff->ieee);
 
 	afAddrType_t addrtype;
 	if(d){
-		fprintf(stdout, "send onoff command\n");
 		addrtype.addr.shortAddr = d->shortaddr;
 		addrtype.endPoint = onoff->endpoint;
+		printf("[zcl_down_cmd_onoff] unlock\n");
+		pthread_mutex_unlock(&big_mutex);
 		if(onoff->onoff){
 			//zclGeneral_SendOnOff_CmdOn(APP_DEVICETYPEID_SS_ENDPOINT, &addrtype,0,0);
 			//zclGeneral_SendOnOff_CmdOn(APP_DEVICETYPEID_SS_ENDPOINT, &addrtype,0,get_sequence());
@@ -71,19 +88,25 @@ void zcl_down_cmd_onoff(struct protocol_cmdtype_onoff_ieee * onoff){
 		}
 
 	}
+	else {
+		printf("[zcl_down_cmd_onoff] unlock\n");
+		pthread_mutex_unlock(&big_mutex);
+	}
 
 }
 
 void zcl_down_cmd_level_ctrl(struct protocol_cmdtype_level_ctrl_ieee * level_ctrl)
 {
-
+	pthread_mutex_lock(&big_mutex);
+	printf("[zcl_down_cmd_level_ctrl] lock\n");
 	struct device * d = gateway_getdevice(getgateway(), level_ctrl->ieee);
 
 	if(d){
-		fprintf(stdout, "send level ctrl cmd\n");
 		printf("level_ctrl->serialnum:%x\n", level_ctrl->serialnum);
 		afAddrType_t addrtype;
 		addrtype.addr.shortAddr = d->shortaddr;
+		printf("[zcl_down_cmd_level_ctrl] lock\n");
+		pthread_mutex_unlock(&big_mutex);
 		addrtype.endPoint = level_ctrl->endpoint;
 		switch(level_ctrl->zcl_cmdid) {
 		case COMMAND_LEVEL_MOVE_TO_LEVEL:
@@ -163,11 +186,19 @@ void zcl_down_cmd_config_reporting(struct protocol_cmdtype_config_reporting* con
 			printf("temp is 0x%02x%02x\n", config_reporting->attr_list[i].reprotable_change[1], config_reporting->attr_list[i].reprotable_change[0]);
 		}
 	}
-	
+	pthread_mutex_lock(&big_mutex);
+	printf("[zcl_down_cmd_config_reporting] lock\n");
 	struct device *d = gateway_getdevice(getgateway(),config_reporting->ieee);
 	if(d) {
-		zcl_SendConfigReportCmd(2, config_reporting->endpoint, d->shortaddr,config_reporting->clusterid, &CfgReportCmd,
+		unsigned short shortaddr = d->shortaddr;
+		printf("[zcl_down_cmd_config_reporting] unlock\n");
+		pthread_mutex_unlock(&big_mutex);
+		zcl_SendConfigReportCmd(2, config_reporting->endpoint, shortaddr,config_reporting->clusterid, &CfgReportCmd,
                                ZCL_FRAME_CLIENT_SERVER_DIR, 0, config_reporting->serialnum);
+	}
+	else {
+		printf("[zcl_down_cmd_config_reporting] unlock\n");
+		pthread_mutex_unlock(&big_mutex);
 	}
 	for(i = 0; i < config_reporting->attr_num; i++) {
 		if(config_reporting->attr_list[i].reprotable_change)

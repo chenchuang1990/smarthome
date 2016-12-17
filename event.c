@@ -82,6 +82,7 @@ static void print_hex(unsigned char *addr, int len)
 }
 
 extern int access_period;
+extern unsigned long long test_ieee;
 
 void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int buflen)
 {
@@ -228,7 +229,8 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 							device_clear_status(d, DEVICE_APP_ADD);
 							pthread_mutex_lock(&big_mutex);
 							printf("delete lock\n");
-							sqlitedb_delete_device(del_device.ieee);							
+							sqlitedb_delete_device(del_device.ieee);
+							d->accesscnt = 0;
 							gateway_deldevice(getgateway(), d);	
 							d = NULL;
 							printf("delete unlock\n");
@@ -456,7 +458,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 				     break;
 				case READ_ONOFF_CMD:
 					{
-						//unsigned char onoff = 0;
+						printf("[event_recvmsg] READ_ONOFF_CMD\n");
 						struct protocol_cmdtype_read_state onoff_state;
 						//struct list_head *pos, *n;
 						//struct device *other_dev;
@@ -476,13 +478,15 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 								if(d->accesscnt-- <= 0)
 									d->accesscnt = 0;
                                 c->cur_dev = NULL;
-								printf("exit count:%d\n", d->accesscnt);
+								printf("------exit count:%d-----\n", d->accesscnt);
 								break;
 							}
 							//else if (0xff == onoff_state.endpoint && 1 == d->noneedcheck) {
 							else if (0xff == onoff_state.endpoint) {
+								if((c->cur_dev == d) && (c->type == CONNSOCKETCLIENT))
+									break;
 								d->accesscnt++;
-								printf("enter count:%d\n", d->accesscnt);
+								printf("++++++enter count:%d++++++\n", d->accesscnt);
 								c->cur_dev = d;
 								d->record = d->activeep.ActiveEPCount;
 								d->timestamp = time(NULL);
@@ -519,6 +523,7 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 				case READ_LEVEL_CMD:
 					{
 						//unsigned char result = 1, level = 0;
+						printf("[event_recvmsg] READ_LEVEL_CMD\n");
 						struct protocol_cmdtype_read_state level_state;
 						//struct list_head *pos, *n;
 						//struct device *other_dev;
@@ -536,29 +541,20 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 							if(0 == level_state.endpoint) {
 								if(d->accesscnt-- <= 0)
 									d->accesscnt = 0;
-								printf("exit count:%d\n", d->accesscnt);
+                                c->cur_dev = NULL;
+								printf("------exit count:%d-----\n", d->accesscnt);
 								break;
 							}
+							//else if (0xff == onoff_state.endpoint && 1 == d->noneedcheck) {
 							else if (0xff == level_state.endpoint) {
+								if((c->cur_dev == d) && (c->type == CONNSOCKETCLIENT))
+									break;
 								d->accesscnt++;
-								printf("enter count:%d\n", d->accesscnt);
+								printf("++++++enter count:%d++++++\n", d->accesscnt);
+								c->cur_dev = d;
+								d->record = d->activeep.ActiveEPCount;
 								d->timestamp = time(NULL);
-								#if 0
-								list_for_each_safe(pos, n, &getgateway()->head){ 
-									other_dev = list_entry(pos, struct device, list); 
-									if(other_dev->noneedcheck == 0 && other_dev->ieeeaddr != d->ieeeaddr){
-										other_dev->noneedcheck = 1;
-									}
-								}
-								#endif
 							}
-							#if 0
-							struct endpoint *ep = device_get_endpoint(d, level_state.endpoint);					
-							if(ep) {
-						    	onoff = ep->simpledesc.device_state;
-								result = 0;
-							}
-							#endif
 						}
 						else {
 							fprintf(stdout, "READ_LEVEL_CMD:device has been deleted\n");
@@ -577,28 +573,76 @@ void event_recvmsg(struct eventhub * hub, int fd, unsigned char * buf, int bufle
 					{
 						const unsigned char *p = buffer;
 						struct test_header test;
-						zclCfgReportCmd_t CfgReportCmd;
+						//static unsigned long long test_ieee;
 						
 						bytebuffer_skipbytes(&p, 5);
 						bytebuffer_readdword(&p, &test.serialnum);
 						bytebuffer_readquadword(&p, &test.ieee);
 						bytebuffer_readbyte(&p, &test.endpoint);
 						printf("serialnum:%d ieee:%llx endpoint:%x\n", test.serialnum, test.ieee, test.endpoint);
-						//unsigned char change = 0;
-						memset(&CfgReportCmd, 0, sizeof(CfgReportCmd));
-						CfgReportCmd.numAttr = 1;
-						CfgReportCmd.attrList[0].direction = 0;
-						CfgReportCmd.attrList[0].attrID = 0x0000;
-						CfgReportCmd.attrList[0].dataType = 0x10;
-						CfgReportCmd.attrList[0].minReportInt = 0;
-						CfgReportCmd.attrList[0].maxReportInt = 30;
-						CfgReportCmd.attrList[0].timeoutPeriod = 0;
-						CfgReportCmd.attrList[0].reportableChange = NULL;
+						switch(test.serialnum) {
+						case 1:
+						{
+							//unsigned char change = 0;
+							zclCfgReportCmd_t CfgReportCmd;
+							memset(&CfgReportCmd, 0, sizeof(CfgReportCmd));
+							CfgReportCmd.numAttr = 1;
+							CfgReportCmd.attrList[0].direction = 0;
+							CfgReportCmd.attrList[0].attrID = 0x0000;
+							CfgReportCmd.attrList[0].dataType = 0x10;
+							CfgReportCmd.attrList[0].minReportInt = 0;
+							CfgReportCmd.attrList[0].maxReportInt = 30;
+							CfgReportCmd.attrList[0].timeoutPeriod = 0;
+							CfgReportCmd.attrList[0].reportableChange = NULL;
 
-						struct device *d = gateway_getdevice(getgateway(), test.ieee);
-						if(d) {
-							printf("gateway_get_endpoint\n");
-							zcl_SendConfigReportCmd(1, 1, d->shortaddr, 0x0006, &CfgReportCmd, 0, 1, get_sequence());
+							struct device *d = gateway_getdevice(getgateway(), test.ieee);
+							if(d) {
+								printf("gateway_get_endpoint\n");
+								//zcl_SendConfigReportCmd(1, 1, d->shortaddr, 0x0006, &CfgReportCmd, 0, 1, get_sequence());
+							}						
+							break;
+						}
+						case 2:
+						{
+							zclReadCmd_t readcmd; 
+							readcmd.numAttr = 1;
+							readcmd.attrID[0] = ATTRID_BASIC_ZCL_VERSION;
+
+							
+						}
+						case 3:
+						{
+							printf("send zdoIeeeAddrReq\n");
+							IeeeAddrReqFormat_t ieee_req;
+							memset(&ieee_req, 0, sizeof(ieee_req));
+							ieee_req.ShortAddr = 0;
+							ieee_req.ReqType = 0;
+							ieee_req.StartIndex = 0;
+							zdoIeeeAddrReq(&ieee_req);						
+							//break;
+							
+							printf("zdo bind req\n");
+							printf("src ieee: %llx\n", test_ieee);
+							//unsigned char *p;
+							BindReqFormat_t bind_req;
+							struct device *d = gateway_getdevice(getgateway(), test.ieee);
+							printf("dst ieee: %llx\n", d->ieeeaddr);
+							bind_req.ClusterID = 0x0006;
+							bind_req.DstAddr = d->shortaddr;
+							memcpy(bind_req.DstAddress, (char *)(&d->ieeeaddr), 8);
+							//p = bind_req.DstAddress;
+							//bytebuffer_writequadword(&p, d->ieeeaddr);
+							bind_req.DstAddrMode = afAddr16Bit;
+							bind_req.DstEndpoint = 1;
+
+							//p = bind_req.SrcAddress;
+							//bytebuffer_writequadword(&p, test_ieee);
+							memcpy(bind_req.SrcAddress, (char *)(&test_ieee), 8);
+							bind_req.SrcEndpoint = 1;
+							zdoBindReq(&bind_req);
+							break;
+						}
+							
 						}
 					}
 					break;
@@ -827,8 +871,10 @@ void event_recvznp(struct eventhub * hub, int fd){
 				}
 				//d->status &= ~DEVICE_APP_DEL;
 				//sqlitedb_update_device_status(d);
+				d->online = 1;
+				d->timestamp = time(NULL);
 				device_set_status(d, DEVICE_APP_ADD);
-
+				sqlitedb_update_device_online(d);
 				//add the devicename field
 				if(0 == strlen(d->devicename)) {
 					init_devicename(d);
@@ -920,6 +966,10 @@ void event_recvznp(struct eventhub * hub, int fd){
 								buflen = protocol_encode_alarm(buf, &req);
 								broadcast(buf, buflen);
 							}
+							else {
+								printf("^V^*^V^*^V^*^V^* Heart Beat *^V^*^V^*^V^*^V^*\n");
+								printf("%llx------->%d:%d:%d\n", d->ieeeaddr, tm->tm_hour, tm->tm_min, tm->tm_sec);
+							}
 						}	
 						ep->simpledesc.zcl_transnum = req.trans_num;
 						sqlitedb_update_device_seq(req.ieeeaddr, req.endpoint, req.trans_num);
@@ -998,6 +1048,7 @@ void event_recvznp(struct eventhub * hub, int fd){
 				broadcast(buf, buflen);
 			}
 			break;
+		#if 0
 		case ZCLBASICSTATUS:
 			{
 				struct zclbasicstatus basic_status;
@@ -1007,7 +1058,6 @@ void event_recvznp(struct eventhub * hub, int fd){
 				broadcast(buf, buflen);			
 			}
 			break;
-		#if 0
 		case ZCLONOFFREPORT:
 			{
 				struct zclonoffreport onoff_report;

@@ -39,7 +39,8 @@ unsigned int protocol_encode_readonoff_response(unsigned char *buf, struct zclre
 unsigned int protocol_encode_level_response(unsigned char *buf, struct zcllevlctldefaultresponse *response);
 unsigned int protocol_encode_readlevel_response(unsigned char *buf, struct zclreadlevelctlrsp * response);
 unsigned int protocol_encode_warning_response(unsigned char *buf, struct zclgeneraldefaultresponse *response);
-unsigned int protocol_encode_report_status(unsigned char *buf, struct zclbasicstatus* status);
+//unsigned int protocol_encode_report_status(unsigned char *buf, struct zclbasicstatus* status);
 unsigned int protocol_encode_state_feedback(unsigned char *buf, struct protocol_cmdtype_read_state *read_state, unsigned short msgid, unsigned char state);
+unsigned int protocol_encode_report_online(unsigned char *buf, struct protocol_cmdtype_report_online *online);
 //unsigned int protocol_encode_onoff_report(unsigned char *buf, struct zclonoffreport* status);
 #endif

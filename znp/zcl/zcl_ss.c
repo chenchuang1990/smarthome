@@ -3,6 +3,7 @@
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include "sqlitedb.h"
 #include "zcl_ss.h" 
@@ -14,6 +15,7 @@
 #include "gateway.h" 
 
 extern int g_znpwfd;
+extern pthread_mutex_t big_mutex;
 
 #define NEW_PROTOCOL
 
@@ -306,8 +308,9 @@ int zclss_processincmd_zonestatus_enrollrequest(struct zclincomingmsg * pInMsg){
 	// if ( stat == ZSuccess )
 	{
 		// Send a response back
+		pthread_mutex_unlock(&big_mutex);
 		stat = zclSS_IAS_Send_ZoneStatusEnrollResponseCmd( pInMsg->message->DstEndpoint, pInMsg->message->SrcEndpoint, pInMsg->message->SrcAddr, responseCode, zoneID, TRUE, pInMsg->zclframehdr.transseqnum );
-
+		pthread_mutex_lock(&big_mutex);
 		//return ( ZCL_STATUS_CMD_HAS_RSP );
 	}
 	// else
@@ -579,45 +582,6 @@ int zclss_handle_default( struct zclincomingmsg * zclincomingmsg){
 	return result;
 }
 
-/*
-int report_basic_status(struct zclincomingmsg *zclin)
-{
-	struct zcl_basic_status_cmd cmd;
-	cmd.cmdid = ZCLBASICSTATUS;
-	cmd.req.status= zclin->data[2];
-	struct device * d = gateway_getdevice_shortaddr(zclin->message->SrcAddr);
-	if(d){
-		cmd.req.ieeeaddr = d->ieeeaddr;
-	}
-
-	//write(g_znpwfd, &cmd, sizeof(struct zcl_basic_status_cmd));
-
-	return 0;
-}
-*/
-
-int handle_basic_status(struct zclincomingmsg *zclin)
-{
-	struct zcl_basic_status_cmd cmd;
-	cmd.cmdid = ZCLBASICSTATUS;
-	//cmd.req.status= zclin->data[2];
-	cmd.req.status= 1;
-	struct device * d = gateway_getdevice_shortaddr(zclin->message->SrcAddr);
-	if(d){
-		cmd.req.ieeeaddr = d->ieeeaddr;
-	}
-	d->timestamp = time(NULL);
-	//if(d->status & DEVICE_APP_DEL) {
-	if(!(d->status & DEVICE_APP_ADD)) {
-		//d->status &= ~DEVICE_APP_DEL;
-		//sqlitedb_update_device_status(d);
-		device_set_status(d, DEVICE_APP_ADD);
-	}
-
-	//write(g_znpwfd, &cmd, sizeof(struct zcl_basic_status_cmd));
-
-	return 0;
-}
 
 int handle_onoff_state(struct zclincomingmsg *zclin)
 {
@@ -651,9 +615,27 @@ int zcl_pross_read_levelctl_rsp(struct zclincomingmsg *msg)
 	cmd.req.serialnum = msg->zclframehdr.transseqnum;
 
 	struct endpoint *ep = gateway_get_endpoint(d->ieeeaddr, msg->message->SrcEndpoint);
+#if 0
 	if(ep && (ep->simpledesc.device_state != cmd.req.cur_level)) {
 		write(g_znpwfd, &cmd, sizeof(struct zcl_read_levelctl_rsp_cmd));
 		ep->simpledesc.device_state = cmd.req.cur_level;
+	}
+#endif
+	if(ep) {
+		if(ep->simpledesc.device_state != cmd.req.cur_level) {
+			ep->simpledesc.device_state = cmd.req.cur_level;
+			write(g_znpwfd, &cmd, sizeof(struct zcl_read_levelctl_rsp_cmd));
+			sqlitedb_update_device_state(cmd.req.ieeeaddr, cmd.req.endpoint, cmd.req.cur_level);
+			if(d->record > 0) {
+				d->record--;
+				printf("d->record:%d\n", d->record);
+			}
+		}
+		else if(d->record > 0) {
+			write(g_znpwfd, &cmd, sizeof(struct zcl_read_levelctl_rsp_cmd));
+			d->record--;
+			printf("d->record:%d\n", d->record);
+		}
 	}
 	return 0;
 }

@@ -3,6 +3,9 @@
 
 #define DBPATH "./gateway.db"
 
+#define BOX_VERSION      	1
+#define PROTOCOL_VERSION	5
+
 struct sqlitedb;
 
 struct sqlitedb * sqlitedb_create(char * filepath);
@@ -25,6 +28,7 @@ struct device;
 int sqlitedb_update_device_endpoint(struct device * d);
 int sqlitedb_update_device_attr(struct device * d);
 int sqlitedb_update_device_status(struct device * d);
+int sqlitedb_update_device_online(struct device * d);
 int sqlitedb_update_device_endpoint_zonetype(struct device * d, unsigned char endpoint, unsigned short zonetype);
 
 struct protocol_cmdtype_arm;

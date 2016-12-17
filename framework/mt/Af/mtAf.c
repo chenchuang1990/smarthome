@@ -143,13 +143,15 @@ uint8_t afDataRequest(DataRequestFormat_t *req)
 			cmd[cmInd++] = req->Data[idx];
 
 		}
-
+		printf("[afDataRequest] rpcSendFrame start\n");
 		status = rpcSendFrame((MT_RPC_CMD_SREQ | MT_RPC_SYS_AF),
 		MT_AF_DATA_REQUEST, cmd, cmdLen);
-
+		printf("[afDataRequest] rpcSendFrame end\n");
 		if (status == MT_RPC_SUCCESS)
 		{
+			printf("[afDataRequest] rpcWaitMqClientMsg start\n");
 			rpcWaitMqClientMsg(50);
+			printf("[afDataRequest] rpcWaitMqClientMsg end\n");
 		}
 
 		free(cmd);
@@ -393,7 +395,9 @@ static void processIncomingMsg(uint8_t *rpcBuff, uint8_t rpcLen)
 				rsp.Data[i] = rpcBuff[msgIdx++];
 			}
 		}
+		printf("mtAfCbs.pfnAfIncomingMsg start\n");
 		mtAfCbs.pfnAfIncomingMsg(&rsp);
+		printf("mtAfCbs.pfnAfIncomingMsg end\n");
 	}
 }
 
@@ -606,8 +610,9 @@ void afProcess(uint8_t *rpcBuff, uint8_t rpcLen)
 			break;
 		case MT_AF_INCOMING_MSG:
 			dbg_print(PRINT_LEVEL_VERBOSE, "afProcess: MT_AF_INCOMING_MSG\n");
-			//printf("afProcess: MT_AF_INCOMING_MSG\n");
+			printf("afProcess: MT_AF_INCOMING_MSG start\n");
 			processIncomingMsg(rpcBuff, rpcLen);
+			printf("afProcess: MT_AF_INCOMING_MSG end\n");
 			break;
 		case MT_AF_INCOMING_MSG_EXT:
 			dbg_print(PRINT_LEVEL_VERBOSE,

@@ -1,27 +1,11 @@
 
 /*
- ********************************************
-                   _ooOoo_
-                  o8888888o
-                  88" . "88
-                  (| -_- |)
-                  O\  =  /O
-               ____/`---'\____
-             .'  \\|     |//  `.
-            /  \\|||  :  |||//  \
-           /  _||||| -:- |||||-  \
-           |   | \\\  -  /// |   |
-           | \_|  ''\---/''  |   |
-           \  .-\__  `-`  ___/-. /
-         ___`. .'  /--.--\  `. . __
-      ."" '<  `.___\_<|>_/___.'  >'"".
-     | | :  `- \`.;`\ _ /`;.`/ - ` : | |
-     \  \ `-.   \_ __\ /__ _/   .-` /  /
-======`-.____`-.___\_____/___.-`____.-'======
-                   `=---='
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-         ·ð×æ±£ÓÓ       ÓÀÎÞBUG
-*/
+ ******************SmartHome********************
+  > File Name: main.c
+  > Box Version: 1
+  > Protocol Version: 2
+  > Author: GisKook chen_chuang
+ ***********************************************/
 
 
 #include <string.h>
@@ -80,7 +64,7 @@ int main()
 	}
 	//unsigned long long mac = toolkit_getmac();
 	if(sqlitedb_load_gateway_name(DBPATH, mac)) { 
-		gateway_init(getgateway(), mac, "ç½‘å…³", 1, 1);
+		gateway_init(getgateway(), mac, "ç½‘å…³", BOX_VERSION, PROTOCOL_VERSION);
 		sqlitedb_add_gateway(mac, "ç½‘å…³"); 
 	}
 	sqlitedb_load_device();
