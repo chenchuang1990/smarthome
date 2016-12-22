@@ -1325,6 +1325,7 @@ static uint8_t mtZdoMsgCbIncomingCb(MsgCbIncomingFormat_t *msg)
 {
 
 	consolePrint("mtZdoMsgCbIncomingCb\n");
+	#if 0
 	consolePrint("SrcAddr: 0x%04X\n", msg->SrcAddr);
 	consolePrint("WasBroadcast: 0x%02X\n", msg->WasBroadcast);
 	consolePrint("ClusterID: 0x%04X\n", msg->ClusterID);
@@ -1334,7 +1335,7 @@ static uint8_t mtZdoMsgCbIncomingCb(MsgCbIncomingFormat_t *msg)
 	consolePrint("Status: 0x%02X\n", msg->Status);
 	consolePrint("ExtAddr: 0x%016llX\n", (long long unsigned int) msg->ExtAddr);
 	consolePrint("NwkAddr: 0x%04X\n", msg->NwkAddr);
-
+	#endif
 	return 0;
 }
 
@@ -1351,9 +1352,9 @@ static uint8_t mtAfDataConfirmCb(DataConfirmFormat_t *msg)
 	consolePrint("mtAfDataConfirmCb\n");
 	if (msg->Status == MT_RPC_SUCCESS)
 	{
-		consolePrint("Status: 0x%02X\n", msg->Status);
-		consolePrint("Endpoint: 0x%02X\n", msg->Endpoint);
-		consolePrint("TransId: 0x%02X\n", msg->TransId);
+		//consolePrint("Status: 0x%02X\n", msg->Status);
+		//consolePrint("Endpoint: 0x%02X\n", msg->Endpoint);
+		//consolePrint("TransId: 0x%02X\n", msg->TransId);
 	}
 	else
 	{
@@ -1386,17 +1387,11 @@ static uint8_t mtAfIncomingMsgCb(IncomingMsgFormat_t *msg)
 	}
 	consolePrint("\n");
 //#endif	
-	//struct device * d = gateway_getdevice_shortaddr(msg->SrcAddr);
-	//if(d){ 
-		//d->status |= DEVICE_ACTIVE;
 	pthread_mutex_lock(&big_mutex);
 	printf("zcl_proccessincomingmessage lock\n");
 	zcl_proccessincomingmessage(msg);
 	printf("zcl_proccessincomingmessage unlock\n");
 	pthread_mutex_unlock(&big_mutex);
-		//d->timestamp = time(NULL);
-	//}
-	printf("mtAfIncomingMsgCb end\n");
 
 	return 0;
 }
@@ -2045,9 +2040,7 @@ void appProcess(void * args)
 
 	int commandtype = 0;
 	for(;;){ 
-		printf("$$$$$$[appProcess] start$$$$$\n");
 		read(znprfd, &commandtype, sizeof(int));
-		printf("get it!\n");
 		switch(commandtype){
 			case PROTOCOL_IDENTIFY:
 				{
@@ -2113,7 +2106,6 @@ void appProcess(void * args)
 				}
 			#endif
 		}
-		printf("$$$$$$[appProcess] end$$$$$$\n");
 	}
 }
 
@@ -2139,7 +2131,6 @@ int appInit(void)
 	zdoRegisterCallbacks(mtZdoCb);
 	afRegisterCallbacks(mtAfCb);
 	sapiRegisterCallbacks(mtSapiCb);
-
 
 	return 0;
 }
