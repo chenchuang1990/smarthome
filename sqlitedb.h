@@ -4,7 +4,7 @@
 #define DBPATH "./gateway.db"
 
 #define BOX_VERSION      	1
-#define PROTOCOL_VERSION	5
+#define PROTOCOL_VERSION	6
 
 struct sqlitedb;
 

@@ -979,6 +979,7 @@ void event_recvznp(struct eventhub * hub, int fd){
 					}
 				}
 				else {
+					d->status &= ~DEVICE_SEND_ACTIVEEP;
 					printf("error:[event_recvznp] no ep\n");
 				}
 			}

@@ -1009,9 +1009,6 @@ printf("zcl_proccessincomingmessage..\n");
 			break;
 		case ZCL_CLUSTER_ID_GEN_LEVEL_CONTROL:
 			handle_levelctl_state(&zclmessage);
-			//if(d->noneedcheck == 1)
-				//d->noneedcheck = 0;
-			//handle_levelctr_rsp(&zclmessage);
 			break;
 		case ZCL_CLUSTER_ID_SS_IAS_WD:
 			//handle_warning_rsp(&zclmessage);
